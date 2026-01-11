@@ -1,0 +1,55 @@
+"""Constants for pyliebherrhomeapi."""
+
+# API endpoints and configuration
+API_BASE_URL = "https://home-api.smartdevice.liebherr.com"
+API_VERSION = "v1"
+DEFAULT_TIMEOUT = 10
+
+# Control names
+CONTROL_TEMPERATURE = "temperature"
+CONTROL_SUPERFROST = "superfrost"
+CONTROL_SUPERCOOL = "supercool"
+CONTROL_PRESENTATION_LIGHT = "presentationlight"
+CONTROL_PARTY_MODE = "partymode"
+CONTROL_NIGHT_MODE = "nightmode"
+CONTROL_ICE_MAKER = "icemaker"
+CONTROL_HYDRO_BREEZE = "hydrobreeze"
+CONTROL_BIO_FRESH_PLUS = "biofreshplus"
+CONTROL_AUTO_DOOR = "autodoor"
+
+# Temperature units
+UNIT_CELSIUS = "°C"
+UNIT_FAHRENHEIT = "°F"
+
+# Ice maker modes
+ICE_MAKER_OFF = "OFF"
+ICE_MAKER_ON = "ON"
+ICE_MAKER_MAX_ICE = "MAX_ICE"
+
+# HydroBreeze modes
+HYDRO_BREEZE_OFF = "OFF"
+HYDRO_BREEZE_LOW = "LOW"
+HYDRO_BREEZE_MEDIUM = "MEDIUM"
+HYDRO_BREEZE_HIGH = "HIGH"
+
+# BioFreshPlus modes
+BIO_FRESH_PLUS_ZERO_ZERO = "ZERO_ZERO"
+BIO_FRESH_PLUS_ZERO_MINUS_TWO = "ZERO_MINUS_TWO"
+BIO_FRESH_PLUS_MINUS_TWO_MINUS_TWO = "MINUS_TWO_MINUS_TWO"
+BIO_FRESH_PLUS_MINUS_TWO_ZERO = "MINUS_TWO_ZERO"
+
+# Device types
+DEVICE_TYPE_FRIDGE = "FRIDGE"
+DEVICE_TYPE_FREEZER = "FREEZER"
+DEVICE_TYPE_COMBI = "COMBI"
+DEVICE_TYPE_WINE = "WINE"
+
+# Zone positions
+ZONE_TOP = "top"
+ZONE_MIDDLE = "middle"
+ZONE_BOTTOM = "bottom"
+
+# Auto door states
+DOOR_CLOSED = "CLOSED"
+DOOR_OPEN = "OPEN"
+DOOR_MOVING = "MOVING"

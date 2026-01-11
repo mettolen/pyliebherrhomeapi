@@ -1,0 +1,1718 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "HomeAPI",
+        "description": "API to integrate your Liebherr consumer appliances into your Smart Home.\n\nThe HomeAPI provides basic endpoints to integrate your Liebherr consumer appliance into your Smart Home.\nBefore you are able to use the HomeAPI, you need to make sure the appliance is connected in the SmartDevice app and you have the API key at hand.\n\nIn the swagger UI, we use the following terms:\n  - device = the Liebherr appliance\n  - deviceId = the serial number of the appliance\n\nFor more information see: [documentation](https://developer.liebherr.com/apis/smartdevice-homeapi/)\n",
+        "version": "v1"
+    },
+    "servers": [
+        {
+            "url": "https://home-api.smartdevice.liebherr.com",
+            "description": "HomeAPI"
+        }
+    ],
+    "security": [
+        {
+            "api-key": []
+        }
+    ],
+    "tags": [
+        {
+            "name": "Get devices"
+        },
+        {
+            "name": "Manage Controls"
+        }
+    ],
+    "paths": {
+        "/v1/devices/{deviceId}/controls/temperature": {
+            "post": {
+                "tags": [
+                    "Manage Controls"
+                ],
+                "summary": "Set the temperature on the device",
+                "operationId": "setTemperature",
+                "parameters": [
+                    {
+                        "name": "deviceId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TemperatureControlRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid data provided",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Device is not reachable",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "412": {
+                        "description": "Precondition failed. Make sure the device is onboarded to your household",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Internal service is not reachable",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/devices/{deviceId}/controls/superfrost": {
+            "post": {
+                "tags": [
+                    "Manage Controls"
+                ],
+                "summary": "Set SuperFrost on the device",
+                "operationId": "setSuperFrost",
+                "parameters": [
+                    {
+                        "name": "deviceId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ZoneToggleControlRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid data provided",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Device is not reachable",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "412": {
+                        "description": "Precondition failed. Make sure the device is onboarded to your household",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Internal service is not reachable",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/devices/{deviceId}/controls/supercool": {
+            "post": {
+                "tags": [
+                    "Manage Controls"
+                ],
+                "summary": "Set SuperCool on the device",
+                "operationId": "setSuperCool",
+                "parameters": [
+                    {
+                        "name": "deviceId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ZoneToggleControlRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid data provided",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Device is not reachable",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "412": {
+                        "description": "Precondition failed. Make sure the device is onboarded to your household",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Internal service is not reachable",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/devices/{deviceId}/controls/presentationlight": {
+            "post": {
+                "tags": [
+                    "Manage Controls"
+                ],
+                "summary": "Set PresentationLight on the device",
+                "operationId": "setPresentationLight",
+                "parameters": [
+                    {
+                        "name": "deviceId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PresentationLightControlRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid data provided",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Device is not reachable",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "412": {
+                        "description": "Precondition failed. Make sure the device is onboarded to your household",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Internal service is not reachable",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/devices/{deviceId}/controls/partymode": {
+            "post": {
+                "tags": [
+                    "Manage Controls"
+                ],
+                "summary": "Set PartyMode on the device",
+                "operationId": "setPartyMode",
+                "parameters": [
+                    {
+                        "name": "deviceId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BaseToggleControlRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid data provided",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Device is not reachable",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "412": {
+                        "description": "Precondition failed. Make sure device is onboarded to your household",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Internal service is not reachable",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/devices/{deviceId}/controls/nightmode": {
+            "post": {
+                "tags": [
+                    "Manage Controls"
+                ],
+                "summary": "Set NightMode on the device",
+                "operationId": "setNightMode",
+                "parameters": [
+                    {
+                        "name": "deviceId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BaseToggleControlRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid data provided",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Device is not reachable",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "412": {
+                        "description": "Precondition failed. Make sure the device is onboarded to your household",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Internal service is not reachable",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/devices/{deviceId}/controls/icemaker": {
+            "post": {
+                "tags": [
+                    "Manage Controls"
+                ],
+                "summary": "Set IceMaker on the device",
+                "operationId": "setIceMaker",
+                "parameters": [
+                    {
+                        "name": "deviceId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/IceMakerControlRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid data provided",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Device is not reachable",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "412": {
+                        "description": "Precondition failed. Make sure the device is onboarded to your household",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Operation not supported. Make sure Max Ice is supported for the given device",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Internal service is not reachable",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/devices/{deviceId}/controls/hydrobreeze": {
+            "post": {
+                "tags": [
+                    "Manage Controls"
+                ],
+                "summary": "Set HydroBreeze mode on the device",
+                "operationId": "setHydroBreezeMode",
+                "parameters": [
+                    {
+                        "name": "deviceId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/HydroBreezeControlRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid data provided",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Device is not reachable",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "412": {
+                        "description": "Precondition failed. Make sure the device is onboarded to your household",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Operation not supported. Make sure BioFreshPlus is enabled",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Internal service is not reachable",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/devices/{deviceId}/controls/biofreshplus": {
+            "post": {
+                "tags": [
+                    "Manage Controls"
+                ],
+                "summary": "Set BioFreshPlus mode on the device",
+                "operationId": "setBioFreshPlusMode",
+                "parameters": [
+                    {
+                        "name": "deviceId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/BioFreshPlusControlRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid data provided",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Device is not reachable",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "412": {
+                        "description": "Precondition failed. Make sure the device is onboarded to your household",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Operation not supported. Make sure BioFreshPlus is enabled",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Internal service is not reachable",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/devices/{deviceId}/controls/autodoor": {
+            "post": {
+                "tags": [
+                    "Manage Controls"
+                ],
+                "summary": "Opens/closes the door on a given zone of a given appliance",
+                "operationId": "triggerAutoDoor",
+                "parameters": [
+                    {
+                        "name": "deviceId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ZoneToggleControlRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid data provided",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Device is not reachable",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "412": {
+                        "description": "Precondition failed. Make sure the device is onboarded to your household",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Operation not supported. Make sure Auto Door is enabled",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Internal service is not reachable",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/devices": {
+            "get": {
+                "tags": [
+                    "Get Devices"
+                ],
+                "summary": "Get all connected devices",
+                "operationId": "getDevices",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Device"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/devices/{deviceId}": {
+            "get": {
+                "tags": [
+                    "Get Devices"
+                ],
+                "summary": "Get a specific device by the given device id",
+                "operationId": "getDeviceByDeviceId",
+                "parameters": [
+                    {
+                        "name": "deviceId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Device"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/devices/{deviceId}/controls": {
+            "get": {
+                "tags": [
+                    "Manage Controls"
+                ],
+                "summary": "Get device controls by the given device id",
+                "operationId": "getDeviceControls",
+                "parameters": [
+                    {
+                        "name": "deviceId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "oneOf": [
+                                            {
+                                                "$ref": "#/components/schemas/AutoDoor"
+                                            },
+                                            {
+                                                "$ref": "#/components/schemas/BioFreshPlus"
+                                            },
+                                            {
+                                                "$ref": "#/components/schemas/HydroBreeze"
+                                            },
+                                            {
+                                                "$ref": "#/components/schemas/IceMaker"
+                                            },
+                                            {
+                                                "$ref": "#/components/schemas/Temperature"
+                                            },
+                                            {
+                                                "$ref": "#/components/schemas/Toggle"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/devices/{deviceId}/controls/{controlName}": {
+            "get": {
+                "tags": [
+                    "Manage Controls"
+                ],
+                "summary": "Get device control by the given device id and control name. The optional zoneId query parameter may be used for filtering. This is particularly useful for temperature control.",
+                "operationId": "getDeviceControlByName",
+                "parameters": [
+                    {
+                        "name": "deviceId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "controlName",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "supercool",
+                                "superfrost",
+                                "nightmode",
+                                "partymode",
+                                "temperature",
+                                "icemaker",
+                                "autodoor",
+                                "presentationlight",
+                                "biofreshplus",
+                                "hydrobreeze"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "zoneId",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "format": "int32"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "oneOf": [
+                                            {
+                                                "$ref": "#/components/schemas/AutoDoor"
+                                            },
+                                            {
+                                                "$ref": "#/components/schemas/BioFreshPlus"
+                                            },
+                                            {
+                                                "$ref": "#/components/schemas/HydroBreeze"
+                                            },
+                                            {
+                                                "$ref": "#/components/schemas/IceMaker"
+                                            },
+                                            {
+                                                "$ref": "#/components/schemas/Temperature"
+                                            },
+                                            {
+                                                "$ref": "#/components/schemas/Toggle"
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "TemperatureControlRequest": {
+                "type": "object",
+                "description": "Model to set the temperature of a device",
+                "properties": {
+                    "zoneId": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "The zone id of the device",
+                        "example": 0
+                    },
+                    "target": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "The target temperature of the device",
+                        "example": 4
+                    },
+                    "unit": {
+                        "type": "string",
+                        "description": "The temperature unit of the device",
+                        "enum": [
+                            "°C",
+                            "°F"
+                        ],
+                        "example": "°C"
+                    }
+                },
+                "required": [
+                    "target",
+                    "zoneId"
+                ]
+            },
+            "ApiError": {
+                "type": "object",
+                "properties": {
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "100 CONTINUE",
+                            "101 SWITCHING_PROTOCOLS",
+                            "102 PROCESSING",
+                            "103 EARLY_HINTS",
+                            "103 CHECKPOINT",
+                            "200 OK",
+                            "201 CREATED",
+                            "202 ACCEPTED",
+                            "203 NON_AUTHORITATIVE_INFORMATION",
+                            "204 NO_CONTENT",
+                            "205 RESET_CONTENT",
+                            "206 PARTIAL_CONTENT",
+                            "207 MULTI_STATUS",
+                            "208 ALREADY_REPORTED",
+                            "226 IM_USED",
+                            "300 MULTIPLE_CHOICES",
+                            "301 MOVED_PERMANENTLY",
+                            "302 FOUND",
+                            "302 MOVED_TEMPORARILY",
+                            "303 SEE_OTHER",
+                            "304 NOT_MODIFIED",
+                            "305 USE_PROXY",
+                            "307 TEMPORARY_REDIRECT",
+                            "308 PERMANENT_REDIRECT",
+                            "400 BAD_REQUEST",
+                            "401 UNAUTHORIZED",
+                            "402 PAYMENT_REQUIRED",
+                            "403 FORBIDDEN",
+                            "404 NOT_FOUND",
+                            "405 METHOD_NOT_ALLOWED",
+                            "406 NOT_ACCEPTABLE",
+                            "407 PROXY_AUTHENTICATION_REQUIRED",
+                            "408 REQUEST_TIMEOUT",
+                            "409 CONFLICT",
+                            "410 GONE",
+                            "411 LENGTH_REQUIRED",
+                            "412 PRECONDITION_FAILED",
+                            "413 PAYLOAD_TOO_LARGE",
+                            "413 REQUEST_ENTITY_TOO_LARGE",
+                            "414 URI_TOO_LONG",
+                            "414 REQUEST_URI_TOO_LONG",
+                            "415 UNSUPPORTED_MEDIA_TYPE",
+                            "416 REQUESTED_RANGE_NOT_SATISFIABLE",
+                            "417 EXPECTATION_FAILED",
+                            "418 I_AM_A_TEAPOT",
+                            "419 INSUFFICIENT_SPACE_ON_RESOURCE",
+                            "420 METHOD_FAILURE",
+                            "421 DESTINATION_LOCKED",
+                            "422 UNPROCESSABLE_ENTITY",
+                            "423 LOCKED",
+                            "424 FAILED_DEPENDENCY",
+                            "425 TOO_EARLY",
+                            "426 UPGRADE_REQUIRED",
+                            "428 PRECONDITION_REQUIRED",
+                            "429 TOO_MANY_REQUESTS",
+                            "431 REQUEST_HEADER_FIELDS_TOO_LARGE",
+                            "451 UNAVAILABLE_FOR_LEGAL_REASONS",
+                            "500 INTERNAL_SERVER_ERROR",
+                            "501 NOT_IMPLEMENTED",
+                            "502 BAD_GATEWAY",
+                            "503 SERVICE_UNAVAILABLE",
+                            "504 GATEWAY_TIMEOUT",
+                            "505 HTTP_VERSION_NOT_SUPPORTED",
+                            "506 VARIANT_ALSO_NEGOTIATES",
+                            "507 INSUFFICIENT_STORAGE",
+                            "508 LOOP_DETECTED",
+                            "509 BANDWIDTH_LIMIT_EXCEEDED",
+                            "510 NOT_EXTENDED",
+                            "511 NETWORK_AUTHENTICATION_REQUIRED"
+                        ]
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "error": {
+                        "type": "string"
+                    }
+                }
+            },
+            "ZoneToggleControlRequest": {
+                "type": "object",
+                "description": "Model to set the zone control of a device",
+                "properties": {
+                    "zoneId": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "The zone id of the device",
+                        "example": 0
+                    },
+                    "value": {
+                        "type": "boolean",
+                        "description": "The value of the toggle control",
+                        "example": true
+                    }
+                },
+                "required": [
+                    "value",
+                    "zoneId"
+                ]
+            },
+            "PresentationLightControlRequest": {
+                "type": "object",
+                "description": "Model to set the presentation light",
+                "properties": {
+                    "target": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "The presentation light intensity value",
+                        "example": 3
+                    }
+                },
+                "required": [
+                    "target"
+                ]
+            },
+            "BaseToggleControlRequest": {
+                "type": "object",
+                "description": "Model to set the base control of a device",
+                "properties": {
+                    "value": {
+                        "type": "boolean",
+                        "description": "The value of the toggle control",
+                        "example": true
+                    }
+                },
+                "required": [
+                    "value"
+                ]
+            },
+            "IceMakerControlRequest": {
+                "type": "object",
+                "description": "Model to set the icemaker",
+                "properties": {
+                    "iceMakerMode": {
+                        "type": "string",
+                        "description": "The mode of the ice maker tile",
+                        "enum": [
+                            "OFF",
+                            "ON",
+                            "MAX_ICE"
+                        ],
+                        "example": "MAX_ICE"
+                    },
+                    "zoneId": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "The zone id of the device",
+                        "example": 0
+                    }
+                },
+                "required": [
+                    "iceMakerMode",
+                    "zoneId"
+                ]
+            },
+            "HydroBreezeControlRequest": {
+                "type": "object",
+                "description": "Mode to set the hydrobreeze",
+                "properties": {
+                    "hydroBreezeMode": {
+                        "type": "string",
+                        "description": "The mode of the hydrobreeze tile",
+                        "enum": [
+                            "OFF",
+                            "LOW",
+                            "MEDIUM",
+                            "HIGH"
+                        ],
+                        "example": "MEDIUM"
+                    },
+                    "zoneId": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "The zone id of the device",
+                        "example": 0
+                    }
+                },
+                "required": [
+                    "hydroBreezeMode",
+                    "zoneId"
+                ]
+            },
+            "BioFreshPlusControlRequest": {
+                "type": "object",
+                "description": "Mode to set the biofreshplus",
+                "properties": {
+                    "bioFreshPlusMode": {
+                        "type": "string",
+                        "description": "The mode of the biofreshplus tile",
+                        "enum": [
+                            "ZERO_ZERO",
+                            "ZERO_MINUS_TWO",
+                            "MINUS_TWO_MINUS_TWO",
+                            "MINUS_TWO_ZERO"
+                        ],
+                        "example": "ZERO_ZERO"
+                    },
+                    "zoneId": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "The zone id of the device",
+                        "example": 0
+                    }
+                },
+                "required": [
+                    "bioFreshPlusMode",
+                    "zoneId"
+                ]
+            },
+            "Device": {
+                "type": "object",
+                "description": "A filtered representation of a device",
+                "properties": {
+                    "deviceId": {
+                        "type": "string",
+                        "description": "The device id or serial number of the device",
+                        "example": "34.916.716.7"
+                    },
+                    "nickname": {
+                        "type": "string",
+                        "description": "The user given nickname of the device",
+                        "example": "kitchen fridge"
+                    },
+                    "deviceType": {
+                        "type": "string",
+                        "description": "Type of the device",
+                        "enum": [
+                            "FRIDGE",
+                            "FREEZER",
+                            "COMBI",
+                            "WINE"
+                        ],
+                        "example": "Fridge"
+                    },
+                    "imageUrl": {
+                        "type": "string",
+                        "description": "A URL pointing to an image of the device",
+                        "example": "https://inthaudigital.blob.core.windows.net:443/lipim/productimages/586214.png"
+                    },
+                    "deviceName": {
+                        "type": "string",
+                        "description": "The name of the device",
+                        "example": "ICBN 3324-21A 001"
+                    }
+                }
+            },
+            "AutoDoor": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/DeviceControl"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "name of the control",
+                                "example": "autodoor"
+                            },
+                            "type": {
+                                "type": "string",
+                                "description": "type of the control",
+                                "example": "AutoDoorControl"
+                            },
+                            "zoneId": {
+                                "type": "integer",
+                                "format": "int32",
+                                "description": "position of the zone in the device as integer"
+                            },
+                            "zonePosition": {
+                                "type": "string",
+                                "description": "position of the zone in the device. One of top, middle, bottom",
+                                "enum": [
+                                    "top",
+                                    "middle",
+                                    "bottom"
+                                ],
+                                "example": "top"
+                            },
+                            "value": {
+                                "type": "string",
+                                "description": "The current state of the door",
+                                "enum": [
+                                    "CLOSED",
+                                    "OPEN",
+                                    "MOVING"
+                                ]
+                            }
+                        }
+                    }
+                ],
+                "description": "An auto door tile for open/closed/moving functionality with door state"
+            },
+            "BioFreshPlus": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/DeviceControl"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "name of the control",
+                                "example": "biofreshplus"
+                            },
+                            "type": {
+                                "type": "string",
+                                "description": "type of the control",
+                                "example": "BioFreshPlusControl"
+                            },
+                            "zoneId": {
+                                "type": "integer",
+                                "format": "int32",
+                                "description": "position of the zone in the device as integer"
+                            },
+                            "currentMode": {
+                                "type": "string",
+                                "description": "The current BioFresh plus mode",
+                                "enum": [
+                                    "ZERO_ZERO",
+                                    "ZERO_MINUS_TWO",
+                                    "MINUS_TWO_MINUS_TWO",
+                                    "MINUS_TWO_ZERO"
+                                ]
+                            },
+                            "supportedModes": {
+                                "type": "array",
+                                "description": "The supported modes for the user to choose from",
+                                "example": "[zero_zero, zero_minus_two, minus_two_minus_two]",
+                                "items": {
+                                    "type": "string",
+                                    "enum": [
+                                        "ZERO_ZERO",
+                                        "ZERO_MINUS_TWO",
+                                        "MINUS_TWO_MINUS_TWO",
+                                        "MINUS_TWO_ZERO"
+                                    ]
+                                }
+                            },
+                            "temperatureUnit": {
+                                "type": "string",
+                                "description": "The temperature unit the user selected on the appliance",
+                                "enum": [
+                                    "°C",
+                                    "°F"
+                                ],
+                                "example": "CELSIUS"
+                            }
+                        }
+                    }
+                ],
+                "description": "A BioFreshPlus tile and configuration"
+            },
+            "DeviceControl": {
+                "type": "object",
+                "discriminator": {
+                    "propertyName": "type"
+                },
+                "properties": {
+                    "type": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "type"
+                ]
+            },
+            "HydroBreeze": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/DeviceControl"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "name of the control",
+                                "example": "hydrobreeze"
+                            },
+                            "type": {
+                                "type": "string",
+                                "description": "type of the control",
+                                "example": "HydroBreezeControl"
+                            },
+                            "zoneId": {
+                                "type": "integer",
+                                "format": "int32",
+                                "description": "position of the zone in the device as integer"
+                            },
+                            "currentMode": {
+                                "type": "string",
+                                "description": "The current value of hydrobreeze: [OFF, LOW, MEDIUM, HIGH]",
+                                "enum": [
+                                    "OFF",
+                                    "LOW",
+                                    "MEDIUM",
+                                    "HIGH"
+                                ],
+                                "example": "MEDIUM"
+                            }
+                        }
+                    }
+                ],
+                "description": "A HydroBreeze tile and configuration"
+            },
+            "IceMaker": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/DeviceControl"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "name of the control",
+                                "example": "icemaker"
+                            },
+                            "type": {
+                                "type": "string",
+                                "description": "type of the control",
+                                "example": "IceMakerControl"
+                            },
+                            "zoneId": {
+                                "type": "integer",
+                                "format": "int32",
+                                "description": "position of the zone in the device as integer"
+                            },
+                            "zonePosition": {
+                                "type": "string",
+                                "description": "position of the zone in the device. One of top, middle, bottom",
+                                "enum": [
+                                    "top",
+                                    "middle",
+                                    "bottom"
+                                ],
+                                "example": "top"
+                            },
+                            "iceMakerMode": {
+                                "type": "string",
+                                "description": "The current state of the mode",
+                                "enum": [
+                                    "OFF",
+                                    "ON",
+                                    "MAX_ICE"
+                                ]
+                            },
+                            "hasMaxIce": {
+                                "type": "boolean",
+                                "description": "Whether the IceMaker on the appliance has a MaxIce feature"
+                            }
+                        }
+                    }
+                ],
+                "description": "An IceMaker tile and configuration"
+            },
+            "Temperature": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/DeviceControl"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "name of the control",
+                                "example": "temperature"
+                            },
+                            "type": {
+                                "type": "string",
+                                "description": "type of the control",
+                                "example": "TemperatureControl"
+                            },
+                            "zoneId": {
+                                "type": "integer",
+                                "format": "int32",
+                                "description": "position of the zone in the device as integer"
+                            },
+                            "zonePosition": {
+                                "type": "string",
+                                "description": "position of the zone in the device. One of top, middle, bottom",
+                                "enum": [
+                                    "top",
+                                    "middle",
+                                    "bottom"
+                                ],
+                                "example": "top"
+                            },
+                            "value": {
+                                "type": "integer",
+                                "format": "int32",
+                                "description": "The current device temperature, also known as display temp",
+                                "example": 4
+                            },
+                            "target": {
+                                "type": "integer",
+                                "format": "int32",
+                                "description": "The target temperature the user has set",
+                                "example": 4
+                            },
+                            "min": {
+                                "type": "integer",
+                                "format": "int32",
+                                "description": "The minimum value the user can set",
+                                "example": 2
+                            },
+                            "max": {
+                                "type": "integer",
+                                "format": "int32",
+                                "description": "The maximum value the user can set",
+                                "example": 8
+                            },
+                            "unit": {
+                                "type": "string",
+                                "description": "The temperature unit the user selected on the device",
+                                "enum": [
+                                    "°C",
+                                    "°F"
+                                ],
+                                "example": "°C"
+                            }
+                        }
+                    }
+                ],
+                "description": "A temperature tile and configuration"
+            },
+            "Toggle": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/DeviceControl"
+                    },
+                    {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "name of the control",
+                                "example": "supercool"
+                            },
+                            "type": {
+                                "type": "string",
+                                "description": "type of the control",
+                                "example": "ToggleControl"
+                            },
+                            "zoneId": {
+                                "type": "integer",
+                                "format": "int32",
+                                "description": "position of the zone in the device as integer"
+                            },
+                            "zonePosition": {
+                                "type": "string",
+                                "description": "position of the zone in the device. One of top, middle, bottom",
+                                "enum": [
+                                    "top",
+                                    "middle",
+                                    "bottom"
+                                ],
+                                "example": "top"
+                            },
+                            "value": {
+                                "type": "boolean",
+                                "description": "The current state of the toggle"
+                            }
+                        }
+                    }
+                ],
+                "description": "A toggle tile for on/off functionality like SuperCool"
+            }
+        },
+        "securitySchemes": {
+            "api-key": {
+                "type": "apiKey",
+                "name": "api-key",
+                "in": "header"
+            }
+        }
+    }
+}
