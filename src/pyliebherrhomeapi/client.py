@@ -191,7 +191,7 @@ class LiebherrClient:
                 try:
                     response.raise_for_status()
                 except aiohttp.ClientResponseError as err:
-                    msg = err.message or response.reason
+                    msg = err.message or response.reason or ""
                     raise LiebherrConnectionError(
                         f"HTTP {response.status}: {msg}"
                     ) from err
