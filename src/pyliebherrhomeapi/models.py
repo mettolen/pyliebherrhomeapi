@@ -310,77 +310,79 @@ class DeviceState:
     device: Device
     controls: list[DeviceControl] = field(default_factory=list)
 
-    def get_temperature_controls(self) -> list[TemperatureControl]:
-        """Get all temperature controls.
+    def get_temperature_controls(self) -> dict[int, TemperatureControl]:
+        """Get all temperature controls grouped by zone.
 
         Returns:
-            List of temperature controls.
+            Dictionary mapping zone_id to temperature control.
 
         """
-        return [
-            control
-            for control in self.controls
-            if isinstance(control, TemperatureControl)
-        ]
+        result: dict[int, TemperatureControl] = {}
+        for control in self.controls:
+            if isinstance(control, TemperatureControl):
+                result[control.zone_id] = control
+        return result
 
-    def get_toggle_controls(self) -> list[ToggleControl]:
-        """Get all toggle controls.
+    def get_toggle_controls(self) -> dict[int | None, ToggleControl]:
+        """Get all toggle controls grouped by zone.
 
         Returns:
-            List of toggle controls.
+            Dictionary mapping zone_id to toggle control.
 
         """
-        return [
-            control for control in self.controls if isinstance(control, ToggleControl)
-        ]
+        result: dict[int | None, ToggleControl] = {}
+        for control in self.controls:
+            if isinstance(control, ToggleControl):
+                result[control.zone_id] = control
+        return result
 
-    def get_auto_door_controls(self) -> list[AutoDoorControl]:
-        """Get all auto door controls.
+    def get_auto_door_controls(self) -> AutoDoorControl | None:
+        """Get auto door control.
 
         Returns:
-            List of auto door controls.
+            Auto door control, or None if not found.
 
         """
-        return [
-            control for control in self.controls if isinstance(control, AutoDoorControl)
-        ]
+        for control in self.controls:
+            if isinstance(control, AutoDoorControl):
+                return control
+        return None
 
-    def get_ice_maker_controls(self) -> list[IceMakerControl]:
-        """Get all ice maker controls.
+    def get_ice_maker_controls(self) -> IceMakerControl | None:
+        """Get ice maker control.
 
         Returns:
-            List of ice maker controls.
+            Ice maker control, or None if not found.
 
         """
-        return [
-            control for control in self.controls if isinstance(control, IceMakerControl)
-        ]
+        for control in self.controls:
+            if isinstance(control, IceMakerControl):
+                return control
+        return None
 
-    def get_hydro_breeze_controls(self) -> list[HydroBreezeControl]:
-        """Get all HydroBreeze controls.
+    def get_hydro_breeze_controls(self) -> HydroBreezeControl | None:
+        """Get HydroBreeze control.
 
         Returns:
-            List of HydroBreeze controls.
+            HydroBreeze control, or None if not found.
 
         """
-        return [
-            control
-            for control in self.controls
-            if isinstance(control, HydroBreezeControl)
-        ]
+        for control in self.controls:
+            if isinstance(control, HydroBreezeControl):
+                return control
+        return None
 
-    def get_biofresh_plus_controls(self) -> list[BioFreshPlusControl]:
-        """Get all BioFreshPlus controls.
+    def get_biofresh_plus_controls(self) -> BioFreshPlusControl | None:
+        """Get BioFreshPlus control.
 
         Returns:
-            List of BioFreshPlus controls.
+            BioFreshPlus control, or None if not found.
 
         """
-        return [
-            control
-            for control in self.controls
-            if isinstance(control, BioFreshPlusControl)
-        ]
+        for control in self.controls:
+            if isinstance(control, BioFreshPlusControl):
+                return control
+        return None
 
     def get_control_by_name(self, name: str) -> DeviceControl | None:
         """Get control by name.
