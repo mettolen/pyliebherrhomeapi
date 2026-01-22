@@ -19,6 +19,8 @@ Important Notes:
 
 from __future__ import annotations
 
+__all__ = ["LiebherrClient"]
+
 from importlib.metadata import PackageNotFoundError, version
 from typing import Any
 
