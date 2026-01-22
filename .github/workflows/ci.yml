@@ -34,6 +34,14 @@ jobs:
         run: |
           mypy .
 
+      - name: Build package
+        run: |
+          python -m build
+
+      - name: Check package with twine
+        run: |
+          twine check dist/*
+
       - name: Test with pytest
         run: |
           pytest --cov=pyliebherrhomeapi --cov-report=xml --cov-report=term-missing --cov-fail-under=95
@@ -44,3 +52,4 @@ jobs:
         with:
           file: ./coverage.xml
           fail_ci_if_error: false
+          token: ${{ secrets.CODECOV_TOKEN }}

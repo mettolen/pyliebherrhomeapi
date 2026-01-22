@@ -410,13 +410,9 @@ class TestDeviceState:
         [
             ("get_temperature_controls", TemperatureControl, 2),
             ("get_toggle_controls", ToggleControl, 2),
-            ("get_auto_door_controls", AutoDoorControl, 1),
-            ("get_ice_maker_controls", IceMakerControl, 1),
-            ("get_hydro_breeze_controls", HydroBreezeControl, 1),
-            ("get_biofresh_plus_controls", BioFreshPlusControl, 1),
         ],
     )
-    def test_get_control_type_methods(
+    def test_get_control_type_methods_dict(
         self,
         sample_device: Device,
         sample_controls: list[DeviceControl],
@@ -424,12 +420,35 @@ class TestDeviceState:
         expected_type: type[DeviceControl],
         expected_count: int,
     ) -> None:
-        """Test various get_*_controls methods."""
+        """Test get_*_controls methods that return dictionaries."""
         state = DeviceState(device=sample_device, controls=sample_controls)
         method = getattr(state, method_name)
         controls = method()
         assert len(controls) == expected_count
-        assert all(isinstance(c, expected_type) for c in controls)
+        assert all(isinstance(c, expected_type) for c in controls.values())
+
+    @pytest.mark.parametrize(
+        ("method_name", "expected_type"),
+        [
+            ("get_auto_door_controls", AutoDoorControl),
+            ("get_ice_maker_controls", IceMakerControl),
+            ("get_hydro_breeze_controls", HydroBreezeControl),
+            ("get_biofresh_plus_controls", BioFreshPlusControl),
+        ],
+    )
+    def test_get_control_type_methods_optional(
+        self,
+        sample_device: Device,
+        sample_controls: list[DeviceControl],
+        method_name: str,
+        expected_type: type[DeviceControl],
+    ) -> None:
+        """Test get_*_controls methods that return optional single controls."""
+        state = DeviceState(device=sample_device, controls=sample_controls)
+        method = getattr(state, method_name)
+        control = method()
+        assert control is not None
+        assert isinstance(control, expected_type)
 
     def test_get_control_by_name_found(
         self, sample_device: Device, sample_controls: list[DeviceControl]
@@ -478,7 +497,7 @@ class TestDeviceState:
         state = DeviceState(device=sample_device, controls=[])
         assert len(state.get_temperature_controls()) == 0
         assert len(state.get_toggle_controls()) == 0
-        assert len(state.get_auto_door_controls()) == 0
-        assert len(state.get_ice_maker_controls()) == 0
-        assert len(state.get_hydro_breeze_controls()) == 0
-        assert len(state.get_biofresh_plus_controls()) == 0
+        assert state.get_auto_door_controls() is None
+        assert state.get_ice_maker_controls() is None
+        assert state.get_hydro_breeze_controls() is None
+        assert state.get_biofresh_plus_controls() is None
