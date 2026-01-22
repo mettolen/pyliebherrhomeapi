@@ -21,6 +21,7 @@ from __future__ import annotations
 
 __all__ = ["LiebherrClient"]
 
+import logging
 from importlib.metadata import PackageNotFoundError, version
 from typing import Any
 
@@ -64,6 +65,8 @@ from .models import (
     parse_control,
 )
 
+_LOGGER = logging.getLogger(__name__)
+
 
 def _get_version() -> str:
     """Return installed package version with a safe fallback."""
@@ -99,10 +102,18 @@ class LiebherrClient:
         self._base_url = base_url.rstrip("/")
         self._own_session = session is None
         self._user_agent = f"pyliebherrhomeapi/{_get_version()}"
+        _LOGGER.debug(
+            "Initialized LiebherrClient "
+            "(base_url=%s, timeout=%ds, external_session=%s)",
+            self._base_url,
+            self._timeout,
+            session is not None,
+        )
 
     async def _get_session(self) -> aiohttp.ClientSession:
         """Get or create aiohttp session."""
         if self._session is None:
+            _LOGGER.debug("Creating new aiohttp ClientSession")
             self._session = aiohttp.ClientSession()
         return self._session
 
@@ -142,6 +153,8 @@ class LiebherrClient:
         }
         session = await self._get_session()
 
+        _LOGGER.debug("Making %s request to %s", method, endpoint)
+
         try:
             async with session.request(
                 method,
@@ -151,6 +164,7 @@ class LiebherrClient:
                 headers=headers,
                 timeout=aiohttp.ClientTimeout(total=self._timeout),
             ) as response:
+                _LOGGER.debug("Response %d from %s", response.status, endpoint)
                 if response.status == 204:
                     return None
 
@@ -168,24 +182,31 @@ class LiebherrClient:
                     return response.reason or ""
 
                 if response.status == 401:
+                    _LOGGER.error("Authentication failed")
                     raise LiebherrAuthenticationError("Authentication failed")
                 if response.status == 400:
                     msg = await _extract_message()
+                    _LOGGER.warning("Bad request: %s", msg)
                     raise LiebherrBadRequestError(f"Invalid data provided: {msg}")
                 if response.status == 404:
                     msg = await _extract_message()
+                    _LOGGER.warning("Resource not found: %s", msg)
                     raise LiebherrNotFoundError(f"Device is not reachable: {msg}")
                 if response.status == 412:
                     msg = await _extract_message()
+                    _LOGGER.warning("Precondition failed: %s", msg)
                     raise LiebherrPreconditionFailedError(f"Precondition failed: {msg}")
                 if response.status == 422:
                     msg = await _extract_message()
+                    _LOGGER.warning("Unsupported operation: %s", msg)
                     raise LiebherrUnsupportedError(f"Operation not supported: {msg}")
                 if response.status == 500:
                     msg = await _extract_message()
+                    _LOGGER.error("Server error: %s", msg)
                     raise LiebherrServerError(f"Internal server error: {msg}")
                 if response.status == 503:
                     msg = await _extract_message()
+                    _LOGGER.error("Service unavailable: %s", msg)
                     raise LiebherrConnectionError(
                         f"Internal service not reachable: {msg}"
                     )
@@ -207,13 +228,21 @@ class LiebherrClient:
                 return data
 
         except (TimeoutError, aiohttp.ServerTimeoutError) as ex:
+            _LOGGER.warning(
+                "Request timeout after %d seconds for %s %s",
+                self._timeout,
+                method,
+                endpoint,
+            )
             raise LiebherrTimeoutError("Request timed out") from ex
         except aiohttp.ClientError as ex:
+            _LOGGER.error("Connection error for %s %s: %s", method, endpoint, ex)
             raise LiebherrConnectionError(f"Connection error: {ex}") from ex
 
     async def close(self) -> None:
         """Close the client session."""
         if self._own_session and self._session:
+            _LOGGER.debug("Closing aiohttp ClientSession")
             await self._session.close()
             self._session = None
 
@@ -238,10 +267,19 @@ class LiebherrClient:
             LiebherrTimeoutError: If request times out.
 
         """
+        _LOGGER.debug("Fetching all devices")
         response = await self._request("GET", "devices")
+        if response is None:
+            return []
+
         if not isinstance(response, list):
             raise LiebherrServerError("Unexpected response format for devices")
-        return [Device.from_dict(device) for device in response]
+
+        devices = [
+            Device.from_dict(device) for device in response if isinstance(device, dict)
+        ]
+        _LOGGER.debug("Retrieved %d device(s)", len(devices))
+        return devices
 
     async def get_device(self, device_id: str) -> Device:
         """Get a specific device by ID.
@@ -258,6 +296,8 @@ class LiebherrClient:
             LiebherrTimeoutError: If request times out.
 
         """
+        masked_id = f"***{device_id[-4:]}" if len(device_id) > 4 else "***"
+        _LOGGER.debug("Fetching device %s", masked_id)
         response = await self._request("GET", f"devices/{device_id}")
         if not isinstance(response, dict):
             raise LiebherrServerError("Unexpected response format for device")
@@ -283,7 +323,9 @@ class LiebherrClient:
         response = await self._request("GET", f"devices/{device_id}/controls")
         if not isinstance(response, list):
             raise LiebherrServerError("Unexpected response format for controls")
-        return [parse_control(control) for control in response]
+        return [
+            parse_control(control) for control in response if isinstance(control, dict)
+        ]
 
     async def get_control(
         self,
@@ -315,7 +357,9 @@ class LiebherrClient:
         )
         if not isinstance(response, list):
             raise LiebherrServerError("Unexpected response format for control")
-        return [parse_control(control) for control in response]
+        return [
+            parse_control(control) for control in response if isinstance(control, dict)
+        ]
 
     # Temperature control
 

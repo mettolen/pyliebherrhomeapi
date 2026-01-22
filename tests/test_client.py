@@ -176,6 +176,15 @@ class TestDeviceOperations:
         with pytest.raises(LiebherrServerError):
             await client.get_devices()
 
+    async def test_get_devices_none_response(
+        self, client: LiebherrClient, mock_response: MagicMock
+    ) -> None:
+        """Test get_devices returns empty list when response is None (204 status)."""
+        mock_response.status = 204
+
+        devices = await client.get_devices()
+        assert devices == []
+
     async def test_get_device_not_dict(
         self, client: LiebherrClient, mock_response: MagicMock
     ) -> None:

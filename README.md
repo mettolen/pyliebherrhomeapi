@@ -6,7 +6,6 @@
 [![codecov](https://codecov.io/gh/mettolen/pyliebherrhomeapi/branch/main/graph/badge.svg)](https://codecov.io/gh/mettolen/pyliebherrhomeapi)
 [![Python Versions](https://img.shields.io/pypi/pyversions/pyliebherrhomeapi.svg)](https://pypi.org/project/pyliebherrhomeapi/)
 [![License](https://img.shields.io/github/license/mettolen/pyliebherrhomeapi.svg)](https://github.com/mettolen/pyliebherrhomeapi/blob/main/LICENSE)
-[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 
 Python library for the [Liebherr SmartDevice Home API](https://developer.liebherr.com/apis/smartdevice-homeapi/).
 
@@ -299,6 +298,40 @@ async def main():
         if devices:
             await poll_device_state(client, devices[0].device_id)
 ```
+
+## Logging
+
+The library uses Python's standard `logging` module for diagnostics. By default, it uses a `NullHandler`, so no logs are emitted unless you configure logging in your application.
+
+### Enable Debug Logging
+
+```python
+import logging
+
+# Enable debug logging for the library
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+
+# Or configure just for pyliebherrhomeapi
+logger = logging.getLogger('pyliebherrhomeapi')
+logger.setLevel(logging.DEBUG)
+handler = logging.StreamHandler()
+handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+logger.addHandler(handler)
+```
+
+### Log Levels
+
+- **DEBUG**: Detailed information about API requests, responses, and session lifecycle
+- **INFO**: General information about operations (currently not used)
+- **WARNING**: HTTP errors and connection issues
+- **ERROR**: Severe errors like server failures
+
+### Privacy
+
+Device IDs are automatically masked in debug logs (showing only last 4 characters) to protect sensitive information.
 
 ## Error Handling
 

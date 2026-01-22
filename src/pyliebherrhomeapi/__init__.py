@@ -1,5 +1,6 @@
 """Python library for Liebherr Home API."""
 
+import logging
 from importlib.metadata import PackageNotFoundError, version
 
 from .client import LiebherrClient
@@ -32,6 +33,9 @@ from .models import (
     ToggleControl,
     ZonePosition,
 )
+
+# Add NullHandler to prevent "No handler found" warnings
+logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 try:
     __version__ = version("pyliebherrhomeapi")
