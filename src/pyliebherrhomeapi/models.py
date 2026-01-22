@@ -357,53 +357,57 @@ class DeviceState:
                 result[control.zone_id] = control
         return result
 
-    def get_auto_door_controls(self) -> AutoDoorControl | None:
-        """Get auto door control.
+    def get_auto_door_controls(self) -> dict[int, AutoDoorControl]:
+        """Get all auto door controls grouped by zone.
 
         Returns:
-            Auto door control, or None if not found.
+            Dictionary mapping zone_id to auto door control.
 
         """
+        result: dict[int, AutoDoorControl] = {}
         for control in self.controls:
             if isinstance(control, AutoDoorControl):
-                return control
-        return None
+                result[control.zone_id] = control
+        return result
 
-    def get_ice_maker_controls(self) -> IceMakerControl | None:
-        """Get ice maker control.
+    def get_ice_maker_controls(self) -> dict[int, IceMakerControl]:
+        """Get all ice maker controls grouped by zone.
 
         Returns:
-            Ice maker control, or None if not found.
+            Dictionary mapping zone_id to ice maker control.
 
         """
+        result: dict[int, IceMakerControl] = {}
         for control in self.controls:
             if isinstance(control, IceMakerControl):
-                return control
-        return None
+                result[control.zone_id] = control
+        return result
 
-    def get_hydro_breeze_controls(self) -> HydroBreezeControl | None:
-        """Get HydroBreeze control.
+    def get_hydro_breeze_controls(self) -> dict[int, HydroBreezeControl]:
+        """Get all HydroBreeze controls grouped by zone.
 
         Returns:
-            HydroBreeze control, or None if not found.
+            Dictionary mapping zone_id to HydroBreeze control.
 
         """
+        result: dict[int, HydroBreezeControl] = {}
         for control in self.controls:
             if isinstance(control, HydroBreezeControl):
-                return control
-        return None
+                result[control.zone_id] = control
+        return result
 
-    def get_biofresh_plus_controls(self) -> BioFreshPlusControl | None:
-        """Get BioFreshPlus control.
+    def get_biofresh_plus_controls(self) -> dict[int, BioFreshPlusControl]:
+        """Get all BioFreshPlus controls grouped by zone.
 
         Returns:
-            BioFreshPlus control, or None if not found.
+            Dictionary mapping zone_id to BioFreshPlus control.
 
         """
+        result: dict[int, BioFreshPlusControl] = {}
         for control in self.controls:
             if isinstance(control, BioFreshPlusControl):
-                return control
-        return None
+                result[control.zone_id] = control
+        return result
 
     def get_control_by_name(self, name: str) -> DeviceControl | None:
         """Get control by name.
