@@ -1,5 +1,12 @@
 # pyliebherrhomeapi
 
+[![PyPI version](https://badge.fury.io/py/pyliebherrhomeapi.svg)](https://badge.fury.io/py/pyliebherrhomeapi)
+[![codecov](https://codecov.io/gh/mettolen/pyliebherrhomeapi/branch/main/graph/badge.svg)](https://codecov.io/gh/mettolen/pyliebherrhomeapi)
+[![Python Versions](https://img.shields.io/pypi/pyversions/pyliebherrhomeapi.svg)](https://pypi.org/project/pyliebherrhomeapi/)
+[![License](https://img.shields.io/github/license/mettolen/pyliebherrhomeapi.svg)](https://github.com/mettolen/pyliebherrhomeapi/blob/main/LICENSE)
+[![Code Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)](https://github.com/mettolen/pyliebherrhomeapi)
+[![Code style: ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+
 Python library for the [Liebherr SmartDevice Home API](https://developer.liebherr.com/apis/smartdevice-homeapi/).
 
 ## Features
@@ -42,12 +49,10 @@ Python library for the [Liebherr SmartDevice Home API](https://developer.liebher
 Before using this library, you need:
 
 1. **Connect your appliance**: Connect your Liebherr appliance via the [SmartDevice app](https://smartdevice.onelink.me/OrY5/8neax8lp) to your home WiFi network
-
    - [Download the SmartDevice app](https://smartdevice.onelink.me/OrY5/8neax8lp)
    - [Instructions for connecting your appliance](https://go.liebherr.com/cb2ct1)
 
 2. **Get your API Key** (via the SmartDevice app):
-
    - Go to **Settings** in the SmartDevice app
    - Select **"Beta features"**
    - Activate the **HomeAPI**

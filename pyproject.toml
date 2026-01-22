@@ -35,6 +35,8 @@ dev = [
     "pytest-timeout>=2.1.0",
     "ruff>=0.1.0",
     "mypy>=1.0",
+    "build>=1.0.0",
+    "twine>=4.0.0",
 ]
 
 [project.urls]

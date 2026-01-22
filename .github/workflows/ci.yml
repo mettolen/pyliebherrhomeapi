@@ -40,7 +40,7 @@ jobs:
 
       - name: Check package with twine
         run: |
-          twine check dist/*
+          python -m twine check dist/*
 
       - name: Test with pytest
         run: |
