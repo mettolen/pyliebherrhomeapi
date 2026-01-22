@@ -22,6 +22,7 @@ Python library for the [Liebherr SmartDevice Home API](https://developer.liebher
 - 🛡️ **Type hints** for better IDE support and development experience
 - ✅ **Input validation** with proper error handling
 - 📊 **Comprehensive data models** for all control types
+- 📝 **Configurable logging** with privacy-focused debug output
 - 🧪 **100% test coverage** ensuring reliability and code quality
 
 ## Requirements
