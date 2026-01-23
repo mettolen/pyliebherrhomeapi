@@ -27,9 +27,9 @@ repos:
     rev: v1.13.0
     hooks:
       - id: mypy
-        additional_dependencies: [aiohttp>=3.9.0]
+        additional_dependencies: [aiohttp>=3.9.0, pytest>=8.0.0]
         args: [--strict]
-        files: ^src/
+        files: ^(src|tests)/
 
   - repo: https://github.com/python-poetry/poetry
     rev: 1.8.0
