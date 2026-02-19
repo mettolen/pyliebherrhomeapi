@@ -24,7 +24,7 @@ __all__ = [
 ]
 
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import Enum, StrEnum
 from typing import Any, TypeVar
 
 _EnumT = TypeVar("_EnumT", bound=Enum)
@@ -47,7 +47,7 @@ def _coerce_enum(enum_cls: type[_EnumT], value: str | None) -> _EnumT | str | No
     return value
 
 
-class DeviceType(str, Enum):
+class DeviceType(StrEnum):
     """Device type enumeration."""
 
     FRIDGE = "fridge"
@@ -56,14 +56,14 @@ class DeviceType(str, Enum):
     WINE = "wine"
 
 
-class TemperatureUnit(str, Enum):
+class TemperatureUnit(StrEnum):
     """Temperature unit enumeration."""
 
     CELSIUS = "°C"
     FAHRENHEIT = "°F"
 
 
-class ZonePosition(str, Enum):
+class ZonePosition(StrEnum):
     """Zone position enumeration."""
 
     TOP = "top"
@@ -71,7 +71,7 @@ class ZonePosition(str, Enum):
     BOTTOM = "bottom"
 
 
-class IceMakerMode(str, Enum):
+class IceMakerMode(StrEnum):
     """Ice maker mode enumeration."""
 
     OFF = "off"
@@ -79,7 +79,7 @@ class IceMakerMode(str, Enum):
     MAX_ICE = "max_ice"
 
 
-class HydroBreezeMode(str, Enum):
+class HydroBreezeMode(StrEnum):
     """HydroBreeze mode enumeration."""
 
     OFF = "off"
@@ -88,7 +88,7 @@ class HydroBreezeMode(str, Enum):
     HIGH = "high"
 
 
-class BioFreshPlusMode(str, Enum):
+class BioFreshPlusMode(StrEnum):
     """BioFreshPlus mode enumeration."""
 
     ZERO_ZERO = "zero_zero"
@@ -97,7 +97,7 @@ class BioFreshPlusMode(str, Enum):
     MINUS_TWO_ZERO = "minus_two_zero"
 
 
-class DoorState(str, Enum):
+class DoorState(StrEnum):
     """Door state enumeration."""
 
     CLOSED = "closed"
@@ -105,7 +105,7 @@ class DoorState(str, Enum):
     MOVING = "moving"
 
 
-class ControlType(str, Enum):
+class ControlType(StrEnum):
     """Control type enumeration."""
 
     TEMPERATURE = "TemperatureControl"
