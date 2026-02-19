@@ -38,8 +38,8 @@ from .const import (
     CONTROL_NIGHT_MODE,
     CONTROL_PARTY_MODE,
     CONTROL_PRESENTATION_LIGHT,
-    CONTROL_SUPERCOOL,
-    CONTROL_SUPERFROST,
+    CONTROL_SUPER_COOL,
+    CONTROL_SUPER_FROST,
     CONTROL_TEMPERATURE,
     DEFAULT_TIMEOUT,
 )
@@ -398,7 +398,7 @@ class LiebherrClient:
 
     # Toggle controls (SuperFrost, SuperCool, etc.)
 
-    async def set_superfrost(self, device_id: str, zone_id: int, value: bool) -> None:
+    async def set_super_frost(self, device_id: str, zone_id: int, value: bool) -> None:
         """Set SuperFrost mode.
 
         Args:
@@ -416,11 +416,11 @@ class LiebherrClient:
         """
         await self._request(
             "POST",
-            f"devices/{device_id}/controls/{CONTROL_SUPERFROST}",
+            f"devices/{device_id}/controls/{CONTROL_SUPER_FROST}",
             json_data={"zoneId": zone_id, "value": value},
         )
 
-    async def set_supercool(self, device_id: str, zone_id: int, value: bool) -> None:
+    async def set_super_cool(self, device_id: str, zone_id: int, value: bool) -> None:
         """Set SuperCool mode.
 
         Args:
@@ -438,7 +438,7 @@ class LiebherrClient:
         """
         await self._request(
             "POST",
-            f"devices/{device_id}/controls/{CONTROL_SUPERCOOL}",
+            f"devices/{device_id}/controls/{CONTROL_SUPER_COOL}",
             json_data={"zoneId": zone_id, "value": value},
         )
 

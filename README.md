@@ -156,14 +156,14 @@ async with LiebherrClient(api_key="your-api-key") as client:
 
 ```python
 # Enable SuperCool for zone 0
-await client.set_supercool(
+await client.set_super_cool(
     device_id="12.345.678.9",
     zone_id=0,
     value=True
 )
 
 # Enable SuperFrost for zone 1
-await client.set_superfrost(
+await client.set_super_frost(
     device_id="12.345.678.9",
     zone_id=1,
     value=True

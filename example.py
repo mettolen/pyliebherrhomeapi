@@ -98,7 +98,7 @@ async def main() -> None:
 
             # Enable SuperCool for zone 0 (zone control - requires zone_id)
             # print("  Enabling SuperCool for zone 0...")
-            # await client.set_supercool(
+            # await client.set_super_cool(
             #     device_id=device.device_id,
             #     zone_id=0,
             #     value=True

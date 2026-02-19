@@ -7,8 +7,8 @@ DEFAULT_TIMEOUT = 10
 
 # Control names
 CONTROL_TEMPERATURE = "temperature"
-CONTROL_SUPERFROST = "superfrost"
-CONTROL_SUPERCOOL = "supercool"
+CONTROL_SUPER_FROST = "superfrost"
+CONTROL_SUPER_COOL = "supercool"
 CONTROL_PRESENTATION_LIGHT = "presentationlight"
 CONTROL_PARTY_MODE = "partymode"
 CONTROL_NIGHT_MODE = "nightmode"
