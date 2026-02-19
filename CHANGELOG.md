@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-02-19
+
+### Changed
+
+- **Breaking**: Migrated all `(str, Enum)` classes to `StrEnum` (`DeviceType`, `TemperatureUnit`, `ZonePosition`, `IceMakerMode`, `HydroBreezeMode`, `BioFreshPlusMode`, `DoorState`, `ControlType`)
+- **Breaking**: Renamed `set_superfrost()` to `set_super_frost()` and `set_supercool()` to `set_super_cool()` for naming consistency
+- **Breaking**: Renamed constants `CONTROL_SUPERFROST` to `CONTROL_SUPER_FROST` and `CONTROL_SUPERCOOL` to `CONTROL_SUPER_COOL`
+- Normalized all enum string values to lowercase for compatibility with Home Assistant translation keys
+- Updated `_coerce_enum()` to handle case-insensitive matching from the API
+- Client setter methods now send `.value.upper()` to the API to match the expected wire format
+
 ## [0.2.1] - 2026-01-23
 
 ### Fixed
