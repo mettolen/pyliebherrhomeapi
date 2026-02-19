@@ -529,7 +529,7 @@ class LiebherrClient:
         await self._request(
             "POST",
             f"devices/{device_id}/controls/{CONTROL_ICE_MAKER}",
-            json_data={"zoneId": zone_id, "iceMakerMode": mode.value},
+            json_data={"zoneId": zone_id, "iceMakerMode": mode.value.upper()},
         )
 
     async def set_hydro_breeze(
@@ -554,7 +554,7 @@ class LiebherrClient:
         await self._request(
             "POST",
             f"devices/{device_id}/controls/{CONTROL_HYDRO_BREEZE}",
-            json_data={"zoneId": zone_id, "hydroBreezeMode": mode.value},
+            json_data={"zoneId": zone_id, "hydroBreezeMode": mode.value.upper()},
         )
 
     async def set_bio_fresh_plus(
@@ -579,7 +579,7 @@ class LiebherrClient:
         await self._request(
             "POST",
             f"devices/{device_id}/controls/{CONTROL_BIO_FRESH_PLUS}",
-            json_data={"zoneId": zone_id, "bioFreshPlusMode": mode.value},
+            json_data={"zoneId": zone_id, "bioFreshPlusMode": mode.value.upper()},
         )
 
     async def trigger_auto_door(

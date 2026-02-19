@@ -34,23 +34,26 @@ def _coerce_enum(enum_cls: type[_EnumT], value: str | None) -> _EnumT | str | No
     """Return enum member when possible, else the raw value.
 
     This prevents hard failures when the upstream API introduces new values.
+    The API may return values in any case, so we try both the original
+    and lowercase variants.
     """
-
     if value is None:
         return None
-    try:
-        return enum_cls(value)
-    except ValueError:
-        return value
+    for variant in (value, value.lower()):
+        try:
+            return enum_cls(variant)
+        except ValueError:
+            pass
+    return value
 
 
 class DeviceType(str, Enum):
     """Device type enumeration."""
 
-    FRIDGE = "FRIDGE"
-    FREEZER = "FREEZER"
-    COMBI = "COMBI"
-    WINE = "WINE"
+    FRIDGE = "fridge"
+    FREEZER = "freezer"
+    COMBI = "combi"
+    WINE = "wine"
 
 
 class TemperatureUnit(str, Enum):
@@ -71,35 +74,35 @@ class ZonePosition(str, Enum):
 class IceMakerMode(str, Enum):
     """Ice maker mode enumeration."""
 
-    OFF = "OFF"
-    ON = "ON"
-    MAX_ICE = "MAX_ICE"
+    OFF = "off"
+    ON = "on"
+    MAX_ICE = "max_ice"
 
 
 class HydroBreezeMode(str, Enum):
     """HydroBreeze mode enumeration."""
 
-    OFF = "OFF"
-    LOW = "LOW"
-    MEDIUM = "MEDIUM"
-    HIGH = "HIGH"
+    OFF = "off"
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
 
 
 class BioFreshPlusMode(str, Enum):
     """BioFreshPlus mode enumeration."""
 
-    ZERO_ZERO = "ZERO_ZERO"
-    ZERO_MINUS_TWO = "ZERO_MINUS_TWO"
-    MINUS_TWO_MINUS_TWO = "MINUS_TWO_MINUS_TWO"
-    MINUS_TWO_ZERO = "MINUS_TWO_ZERO"
+    ZERO_ZERO = "zero_zero"
+    ZERO_MINUS_TWO = "zero_minus_two"
+    MINUS_TWO_MINUS_TWO = "minus_two_minus_two"
+    MINUS_TWO_ZERO = "minus_two_zero"
 
 
 class DoorState(str, Enum):
     """Door state enumeration."""
 
-    CLOSED = "CLOSED"
-    OPEN = "OPEN"
-    MOVING = "MOVING"
+    CLOSED = "closed"
+    OPEN = "open"
+    MOVING = "moving"
 
 
 class ControlType(str, Enum):
