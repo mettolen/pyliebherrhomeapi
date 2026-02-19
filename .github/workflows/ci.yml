@@ -44,7 +44,7 @@ jobs:
 
       - name: Test with pytest
         run: |
-          pytest --cov=pyliebherrhomeapi --cov-report=xml --cov-report=term-missing --cov-fail-under=95
+          pytest --cov=pyliebherrhomeapi --cov-report=xml --cov-report=term-missing --cov-fail-under=100
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5

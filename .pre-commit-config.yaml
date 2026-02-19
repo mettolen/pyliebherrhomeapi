@@ -1,4 +1,4 @@
-# Pre-commit hooks for pyairobotrest
+# Pre-commit hooks for pyliebherrhomeapi
 # See https://pre-commit.com for more information
 
 repos:
@@ -23,17 +23,18 @@ repos:
       # Run the formatter
       - id: ruff-format
 
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.2.6
+    hooks:
+      - id: codespell
+        additional_dependencies: [tomli]
+
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.13.0
     hooks:
       - id: mypy
-        additional_dependencies: [aiohttp>=3.9.0, pytest>=8.0.0]
-        args: [--strict]
+        additional_dependencies:
+          - aiohttp>=3.9.0
+          - pytest>=8.0.0
+        args: [--strict, --ignore-missing-imports]
         files: ^(src|tests)/
-
-  - repo: https://github.com/python-poetry/poetry
-    rev: 1.8.0
-    hooks:
-      - id: poetry-check
-        always_run: false
-        files: ^pyproject\.toml$

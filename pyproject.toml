@@ -78,3 +78,7 @@ disallow_untyped_defs = true
 asyncio_mode = "auto"
 testpaths = ["tests"]
 timeout = 10
+
+[tool.codespell]
+skip = "*.json,*.lock"
+ignore-words-list = "hass"
