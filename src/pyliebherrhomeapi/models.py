@@ -347,17 +347,17 @@ class DeviceState:
                 result[control.zone_id] = control
         return result
 
-    def get_toggle_controls(self) -> dict[int | None, ToggleControl]:
-        """Get all toggle controls grouped by zone.
+    def get_toggle_controls(self) -> dict[str, ToggleControl]:
+        """Get all toggle controls keyed by control name.
 
         Returns:
-            Dictionary mapping zone_id to toggle control.
+            Dictionary mapping control name to toggle control.
 
         """
-        result: dict[int | None, ToggleControl] = {}
+        result: dict[str, ToggleControl] = {}
         for control in self.controls:
             if isinstance(control, ToggleControl):
-                result[control.zone_id] = control
+                result[control.name] = control
         return result
 
     def get_auto_door_controls(self) -> dict[int, AutoDoorControl]:

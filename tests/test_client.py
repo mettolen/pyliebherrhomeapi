@@ -462,11 +462,10 @@ class TestErrorHandling:
     async def test_extract_message_content_type_error(
         self, client: LiebherrClient, mock_response: MagicMock
     ) -> None:
-        """Fallback to response text when JSON parsing fails due to content type."""
+        """Fallback to response reason when JSON parsing fails."""
 
         mock_response.status = 400
         mock_response.reason = "Bad Request"
-        mock_response.text = AsyncMock(return_value="plain error")
         mock_response.json = AsyncMock(
             side_effect=ContentTypeError(MagicMock(), (), message="bad content")
         )
@@ -474,12 +473,12 @@ class TestErrorHandling:
         with pytest.raises(LiebherrBadRequestError) as err:
             await client.get_devices()
 
-        assert "plain error" in str(err.value)
+        assert "Bad Request" in str(err.value)
 
-    async def test_extract_message_returns_reason_when_not_dict(
+    async def test_extract_message_returns_body_when_not_dict(
         self, client: LiebherrClient, mock_response: MagicMock
     ) -> None:
-        """Fallback to response reason when JSON is not a dict."""
+        """Include raw body content when JSON is not a dict."""
 
         mock_response.status = 400
         mock_response.reason = "Bad Request"
@@ -488,7 +487,7 @@ class TestErrorHandling:
         with pytest.raises(LiebherrBadRequestError) as err:
             await client.get_devices()
 
-        assert "Bad Request" in str(err.value)
+        assert "oops" in str(err.value)
 
     async def test_unexpected_json_format_raises_server_error(
         self, client: LiebherrClient, mock_response: MagicMock
@@ -498,7 +497,6 @@ class TestErrorHandling:
         mock_response.status = 200
         mock_response.reason = "OK"
         mock_response.raise_for_status = MagicMock(return_value=None)
-        mock_response.text = AsyncMock(return_value="not json")
         mock_response.json = AsyncMock(side_effect=ValueError("boom"))
 
         with pytest.raises(LiebherrServerError) as err:
@@ -511,6 +509,7 @@ class TestErrorHandling:
     ) -> None:
         """Test that unknown status codes call raise_for_status."""
         mock_response.status = 418
+        mock_response.json = AsyncMock(return_value={"message": "I'm a teapot"})
         mock_response.raise_for_status.side_effect = aiohttp.ClientResponseError(
             request_info=MagicMock(),
             history=(),

@@ -168,44 +168,46 @@ class LiebherrClient:
                 if response.status == 204:
                     return None
 
-                async def _safe_json() -> Any:
-                    return await response.json()
+                # Read the body once to avoid consuming the stream twice
+                body: Any = None
+                body_error: Exception | None = None
+                try:
+                    body = await response.json()
+                except (ContentTypeError, ValueError) as err:
+                    body_error = err
 
-                async def _extract_message() -> str:
-                    try:
-                        error_data = await _safe_json()
-                        if isinstance(error_data, dict):
-                            return str(error_data.get("message", "Unknown error"))
-                    except (ContentTypeError, ValueError):
-                        text = await response.text()
-                        return text.strip() or response.reason or ""
-                    return response.reason or ""
+                def _extract_message() -> str:
+                    if body_error is not None:
+                        return response.reason or ""
+                    if isinstance(body, dict):
+                        return str(body.get("message", "Unknown error"))
+                    return str(body) if body is not None else response.reason or ""
 
                 if response.status == 401:
                     _LOGGER.error("Authentication failed")
                     raise LiebherrAuthenticationError("Authentication failed")
                 if response.status == 400:
-                    msg = await _extract_message()
+                    msg = _extract_message()
                     _LOGGER.warning("Bad request: %s", msg)
                     raise LiebherrBadRequestError(f"Invalid data provided: {msg}")
                 if response.status == 404:
-                    msg = await _extract_message()
+                    msg = _extract_message()
                     _LOGGER.warning("Resource not found: %s", msg)
                     raise LiebherrNotFoundError(f"Device is not reachable: {msg}")
                 if response.status == 412:
-                    msg = await _extract_message()
+                    msg = _extract_message()
                     _LOGGER.warning("Precondition failed: %s", msg)
                     raise LiebherrPreconditionFailedError(f"Precondition failed: {msg}")
                 if response.status == 422:
-                    msg = await _extract_message()
+                    msg = _extract_message()
                     _LOGGER.warning("Unsupported operation: %s", msg)
                     raise LiebherrUnsupportedError(f"Operation not supported: {msg}")
                 if response.status == 500:
-                    msg = await _extract_message()
+                    msg = _extract_message()
                     _LOGGER.error("Server error: %s", msg)
                     raise LiebherrServerError(f"Internal server error: {msg}")
                 if response.status == 503:
-                    msg = await _extract_message()
+                    msg = _extract_message()
                     _LOGGER.error("Service unavailable: %s", msg)
                     raise LiebherrConnectionError(
                         f"Internal service not reachable: {msg}"
@@ -218,13 +220,14 @@ class LiebherrClient:
                     raise LiebherrConnectionError(
                         f"HTTP {response.status}: {msg}"
                     ) from err
-                try:
-                    data: dict[str, Any] | list[Any] = await _safe_json()
-                except (ContentTypeError, ValueError) as err:
-                    msg = await _extract_message()
+
+                if body_error is not None:
                     raise LiebherrServerError(
-                        f"Unexpected response format ({response.status}): {msg}"
-                    ) from err
+                        f"Unexpected response format ({response.status}): "
+                        f"{response.reason or ''}"
+                    ) from body_error
+
+                data: dict[str, Any] | list[Any] = body
                 return data
 
         except (TimeoutError, aiohttp.ServerTimeoutError) as ex:

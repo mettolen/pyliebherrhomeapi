@@ -383,8 +383,9 @@ class TestDeviceState:
         return [
             TemperatureControl(name="temp1", type="TemperatureControl", zone_id=0),
             TemperatureControl(name="temp2", type="TemperatureControl", zone_id=1),
-            ToggleControl(name="toggle1", type="ToggleControl", zone_id=0),
-            ToggleControl(name="toggle2", type="ToggleControl", zone_id=1),
+            ToggleControl(name="superfrost", type="ToggleControl", zone_id=0),
+            ToggleControl(name="supercool", type="ToggleControl", zone_id=0),
+            ToggleControl(name="nightmode", type="ToggleControl", zone_id=1),
             AutoDoorControl(name="door1", type="AutoDoorControl", zone_id=0),
             IceMakerControl(name="ice1", type="IceMakerControl", zone_id=0),
             HydroBreezeControl(name="hydro1", type="HydroBreezeControl", zone_id=1),
@@ -397,7 +398,7 @@ class TestDeviceState:
         """Test creating DeviceState."""
         state = DeviceState(device=sample_device, controls=sample_controls)
         assert state.device == sample_device
-        assert len(state.controls) == 8
+        assert len(state.controls) == 9
 
     def test_device_state_default_controls(self, sample_device: Device) -> None:
         """Test DeviceState with default empty controls."""
@@ -409,7 +410,7 @@ class TestDeviceState:
         ("method_name", "expected_type", "expected_count"),
         [
             ("get_temperature_controls", TemperatureControl, 2),
-            ("get_toggle_controls", ToggleControl, 2),
+            ("get_toggle_controls", ToggleControl, 3),
             ("get_auto_door_controls", AutoDoorControl, 1),
             ("get_ice_maker_controls", IceMakerControl, 1),
             ("get_hydro_breeze_controls", HydroBreezeControl, 1),
@@ -451,8 +452,8 @@ class TestDeviceState:
     @pytest.mark.parametrize(
         ("zone_id", "expected_count"),
         [
-            (0, 4),  # temp1, toggle1, door1, ice1
-            (1, 4),  # temp2, toggle2, hydro1, bio1
+            (0, 5),  # temp1, superfrost, supercool, door1, ice1
+            (1, 4),  # temp2, nightmode, hydro1, bio1
         ],
     )
     def test_get_controls_by_zone(
@@ -482,3 +483,16 @@ class TestDeviceState:
         assert len(state.get_ice_maker_controls()) == 0
         assert len(state.get_hydro_breeze_controls()) == 0
         assert len(state.get_biofresh_plus_controls()) == 0
+
+    def test_toggle_controls_multiple_per_zone(
+        self, sample_device: Device, sample_controls: list[DeviceControl]
+    ) -> None:
+        """Test that multiple toggle controls in the same zone are all preserved."""
+        state = DeviceState(device=sample_device, controls=sample_controls)
+        toggles = state.get_toggle_controls()
+        assert len(toggles) == 3
+        assert "superfrost" in toggles
+        assert "supercool" in toggles
+        assert "nightmode" in toggles
+        assert toggles["superfrost"].zone_id == 0
+        assert toggles["supercool"].zone_id == 0
