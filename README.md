@@ -27,7 +27,7 @@ Python library for the [Liebherr SmartDevice Home API](https://developer.liebher
 
 ## Requirements
 
-- Python 3.11+ (matches the typed codebase and test matrix)
+- Python 3.12+ (matches the typed codebase and test matrix)
 - Asyncio environment with `aiohttp` (installed automatically)
 - Network access to `https://home-api.smartdevice.liebherr.com`
 

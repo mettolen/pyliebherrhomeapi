@@ -6,7 +6,7 @@ Thank you for your interest in contributing to pyliebherrhomeapi! This document 
 
 ### Prerequisites
 
-- Python 3.11 or higher
+- Python 3.13 or higher
 - Git
 - A Liebherr smart appliance for testing (optional but recommended)
 

@@ -6,14 +6,14 @@ This repository contains `pyliebherrhomeapi`, a Python library for the [Liebherr
 
 - **Purpose**: Async Python client for Liebherr smart appliances
 - **Protocol**: REST API over HTTPS (via aiohttp library)
-- **Python**: 3.11+
+- **Python**: 3.12+
 - **Structure**: src layout (`src/pyliebherrhomeapi/`)
 
 ## Code Standards
 
 ### Python Requirements
 
-- **Compatibility**: Python 3.11+
+- **Compatibility**: Python 3.12+
 - **Type hints**: Required for all functions, methods, and variables (strict mypy)
 - **Async/await**: All I/O operations must be async
 - **Docstrings**: Required for all public classes and methods
