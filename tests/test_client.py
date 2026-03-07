@@ -82,6 +82,14 @@ class TestClientLifecycle:
         assert client._timeout == custom_timeout
         await client.close()
 
+    async def test_repr_redacts_api_key(self) -> None:
+        """Test that repr does not expose the API key."""
+        client = LiebherrClient(api_key="secret-key-12345")
+        result = repr(client)
+        assert "secret-key-12345" not in result
+        assert "api_key='***'" in result
+        await client.close()
+
     async def test_creates_own_session(self) -> None:
         """Test client creates its own session when none provided."""
         client = LiebherrClient(api_key=API_KEY)

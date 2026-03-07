@@ -2,35 +2,14 @@
 
 from __future__ import annotations
 
-__all__ = [
-    "DeviceType",
-    "TemperatureUnit",
-    "ZonePosition",
-    "IceMakerMode",
-    "HydroBreezeMode",
-    "BioFreshPlusMode",
-    "DoorState",
-    "ControlType",
-    "Device",
-    "TemperatureControl",
-    "ToggleControl",
-    "AutoDoorControl",
-    "IceMakerControl",
-    "HydroBreezeControl",
-    "BioFreshPlusControl",
-    "DeviceControl",
-    "DeviceState",
-    "parse_control",
-]
-
 from dataclasses import dataclass, field
 from enum import Enum, StrEnum
-from typing import Any, TypeVar
-
-_EnumT = TypeVar("_EnumT", bound=Enum)
+from typing import Any
 
 
-def _coerce_enum(enum_cls: type[_EnumT], value: str | None) -> _EnumT | str | None:
+def _coerce_enum[EnumT: Enum](
+    enum_cls: type[EnumT], value: str | None
+) -> EnumT | str | None:
     """Return enum member when possible, else the raw value.
 
     This prevents hard failures when the upstream API introduces new values.
@@ -116,7 +95,7 @@ class ControlType(StrEnum):
     BIO_FRESH_PLUS = "BioFreshPlusControl"
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class Device:
     """Liebherr device information."""
 
@@ -154,7 +133,7 @@ class Device:
         return self.device_type == DeviceType.WINE
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class TemperatureControl:
     """Temperature control information."""
 
@@ -200,7 +179,7 @@ class TemperatureControl:
         return True
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class ToggleControl:
     """Toggle control (SuperCool, SuperFrost, etc.)."""
 
@@ -222,7 +201,7 @@ class ToggleControl:
         )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class AutoDoorControl:
     """Auto door control information."""
 
@@ -244,7 +223,7 @@ class AutoDoorControl:
         )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class IceMakerControl:
     """Ice maker control information."""
 
@@ -268,7 +247,7 @@ class IceMakerControl:
         )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class HydroBreezeControl:
     """HydroBreeze control information."""
 
@@ -288,7 +267,7 @@ class HydroBreezeControl:
         )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class BioFreshPlusControl:
     """BioFreshPlus control information."""
 
@@ -327,7 +306,7 @@ DeviceControl = (
 )
 
 
-@dataclass
+@dataclass(frozen=True, slots=True)
 class DeviceState:
     """Complete device state including info and all controls."""
 

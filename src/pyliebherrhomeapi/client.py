@@ -19,11 +19,10 @@ Important Notes:
 
 from __future__ import annotations
 
-__all__ = ["LiebherrClient"]
-
 import logging
 from importlib.metadata import PackageNotFoundError, version
-from typing import Any
+from types import TracebackType
+from typing import Any, Self
 
 import aiohttp
 from aiohttp import ContentTypeError
@@ -249,13 +248,26 @@ class LiebherrClient:
             await self._session.close()
             self._session = None
 
-    async def __aenter__(self) -> LiebherrClient:
+    async def __aenter__(self) -> Self:
         """Async context manager entry."""
         return self
 
-    async def __aexit__(self, *args: Any) -> None:
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None,
+    ) -> None:
         """Async context manager exit."""
         await self.close()
+
+    def __repr__(self) -> str:
+        """Return a string representation with redacted API key."""
+        return (
+            f"LiebherrClient(base_url={self._base_url!r}, "
+            f"timeout={self._timeout}, "
+            f"api_key='***')"
+        )
 
     # Device endpoints
 

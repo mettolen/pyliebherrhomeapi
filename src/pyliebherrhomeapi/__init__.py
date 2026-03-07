@@ -19,6 +19,7 @@ from .models import (
     AutoDoorControl,
     BioFreshPlusControl,
     BioFreshPlusMode,
+    ControlType,
     Device,
     DeviceControl,
     DeviceState,
@@ -32,6 +33,7 @@ from .models import (
     TemperatureUnit,
     ToggleControl,
     ZonePosition,
+    parse_control,
 )
 
 # Add NullHandler to prevent "No handler found" warnings
@@ -59,6 +61,7 @@ __all__ = [
     "AutoDoorControl",
     "BioFreshPlusControl",
     "BioFreshPlusMode",
+    "ControlType",
     "Device",
     "DeviceControl",
     "DeviceState",
@@ -72,4 +75,5 @@ __all__ = [
     "TemperatureUnit",
     "ToggleControl",
     "ZonePosition",
+    "parse_control",
 ]
