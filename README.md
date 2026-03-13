@@ -1,13 +1,19 @@
 # pyliebherrhomeapi
 
 [![CI](https://github.com/mettolen/pyliebherrhomeapi/actions/workflows/ci.yml/badge.svg)](https://github.com/mettolen/pyliebherrhomeapi/actions/workflows/ci.yml)
-[![PyPI Version](https://badge.fury.io/py/pyliebherrhomeapi.svg)](https://badge.fury.io/py/pyliebherrhomeapi)
-[![PyPI Downloads](https://img.shields.io/pypi/dm/pyliebherrhomeapi.svg)](https://pypi.org/project/pyliebherrhomeapi/)
 [![codecov](https://codecov.io/gh/mettolen/pyliebherrhomeapi/branch/main/graph/badge.svg)](https://codecov.io/gh/mettolen/pyliebherrhomeapi)
-[![Python Versions](https://img.shields.io/pypi/pyversions/pyliebherrhomeapi.svg)](https://pypi.org/project/pyliebherrhomeapi/)
-[![License](https://img.shields.io/github/license/mettolen/pyliebherrhomeapi.svg)](https://github.com/mettolen/pyliebherrhomeapi/blob/main/LICENSE)
+[![PyPI version](https://badge.fury.io/py/pyliebherrhomeapi.svg)](https://badge.fury.io/py/pyliebherrhomeapi)
+[![PyPI Downloads](https://img.shields.io/pypi/dm/pyliebherrhomeapi.svg)](https://pypi.org/project/pyliebherrhomeapi/)
+[![Python versions](https://img.shields.io/pypi/pyversions/pyliebherrhomeapi.svg)](https://pypi.org/project/pyliebherrhomeapi/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Python library for the [Liebherr SmartDevice Home API](https://developer.liebherr.com/apis/smartdevice-homeapi/).
+
+---
+
+This library is used by the [Liebherr](https://www.home-assistant.io/integrations/liebherr) Home Assistant integration.
+
+<a href="https://www.home-assistant.io/integrations/liebherr/" target="_blank"><img alt="Dynamic Regex Badge" src="https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fwww.home-assistant.io%2Fintegrations%2Fliebherr%2F&search=(%5B%5Cd%2C%5D%2B)%5Cs*%3C%2Fa%3E%5Cs*active%20installations&replace=%241&style=for-the-badge&logo=homeassistant&label=Active%20installations&labelColor=%23f2f4f9&color=%2346bdf4"></a> <a href="https://www.home-assistant.io/docs/quality_scale/" target="_blank"><img alt="Dynamic Regex Badge" src="https://img.shields.io/badge/dynamic/regex?url=https%3A%2F%2Fwww.home-assistant.io%2Fintegrations%2Fliebherr%2F&search=%3Ca%20href%3D'%5B%5E'%5D*quality_scale%5B%5E'%5D*'%3E(%5B%5E%3C%5D%2B%3F)%20quality%3C%2Fa%3E&replace=%241&style=for-the-badge&logo=homeassistant&label=Quality%20scale&labelColor=%23f2f4f9&color=%2346bdf4"></a> <a href="https://my.home-assistant.io/redirect/config_flow_start?domain=liebherr" target="_blank"><img alt="Static Badge" src="https://img.shields.io/badge/Liebherr-i?style=for-the-badge&logo=homeassistant&label=Add%20integration&labelColor=%23f2f4f9&color=%2346bdf4"></a>
 
 ## Features
 
