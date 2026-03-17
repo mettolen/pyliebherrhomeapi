@@ -17,6 +17,7 @@ from pyliebherrhomeapi import (
     HydroBreezeMode,
     IceMakerControl,
     IceMakerMode,
+    PresentationLightControl,
     TemperatureControl,
     TemperatureUnit,
     ToggleControl,
@@ -343,6 +344,32 @@ class TestBioFreshPlusControl:
         assert control.temperature_unit is None
 
 
+class TestPresentationLightControl:
+    """Tests for PresentationLightControl model."""
+
+    def test_presentation_light_control_from_dict(self) -> None:
+        """Test creating PresentationLightControl from dict."""
+        data = {
+            "name": "presentationlight",
+            "type": "PresentationLightControl",
+            "value": 2,
+            "max": 5,
+        }
+        control = PresentationLightControl.from_dict(data)
+        assert control.name == "presentationlight"
+        assert control.type == "PresentationLightControl"
+        assert control.value == 2
+        assert control.max == 5
+
+    def test_presentation_light_control_from_dict_minimal(self) -> None:
+        """Test creating PresentationLightControl from dict with minimal data."""
+        data = {"name": "presentationlight", "type": "PresentationLightControl"}
+        control = PresentationLightControl.from_dict(data)
+        assert control.name == "presentationlight"
+        assert control.value is None
+        assert control.max is None
+
+
 class TestParseControl:
     """Tests for parse_control function."""
 
@@ -355,6 +382,7 @@ class TestParseControl:
             ("IceMakerControl", IceMakerControl),
             ("HydroBreezeControl", HydroBreezeControl),
             ("BioFreshPlusControl", BioFreshPlusControl),
+            ("PresentationLightControl", PresentationLightControl),
             ("UnknownControl", ToggleControl),  # Fallback
         ],
     )
@@ -363,7 +391,7 @@ class TestParseControl:
     ) -> None:
         """Test parsing various control types."""
         data: dict[str, Any] = {"name": "test", "type": control_type}
-        if control_type != "ToggleControl":
+        if control_type not in ("ToggleControl", "PresentationLightControl"):
             data["zoneId"] = 0
         control = parse_control(data)
         assert isinstance(control, expected_class)
@@ -390,6 +418,9 @@ class TestDeviceState:
             IceMakerControl(name="ice1", type="IceMakerControl", zone_id=0),
             HydroBreezeControl(name="hydro1", type="HydroBreezeControl", zone_id=1),
             BioFreshPlusControl(name="bio1", type="BioFreshPlusControl", zone_id=1),
+            PresentationLightControl(
+                name="light1", type="PresentationLightControl", value=2, max=5
+            ),
         ]
 
     def test_device_state_creation(
@@ -398,7 +429,7 @@ class TestDeviceState:
         """Test creating DeviceState."""
         state = DeviceState(device=sample_device, controls=sample_controls)
         assert state.device == sample_device
-        assert len(state.controls) == 9
+        assert len(state.controls) == 10
 
     def test_device_state_default_controls(self, sample_device: Device) -> None:
         """Test DeviceState with default empty controls."""
@@ -415,6 +446,7 @@ class TestDeviceState:
             ("get_ice_maker_controls", IceMakerControl, 1),
             ("get_hydro_breeze_controls", HydroBreezeControl, 1),
             ("get_biofresh_plus_controls", BioFreshPlusControl, 1),
+            ("get_presentation_light_controls", PresentationLightControl, 1),
         ],
     )
     def test_get_control_type_methods_dict(
@@ -483,6 +515,7 @@ class TestDeviceState:
         assert len(state.get_ice_maker_controls()) == 0
         assert len(state.get_hydro_breeze_controls()) == 0
         assert len(state.get_biofresh_plus_controls()) == 0
+        assert len(state.get_presentation_light_controls()) == 0
 
     def test_toggle_controls_multiple_per_zone(
         self, sample_device: Device, sample_controls: list[DeviceControl]

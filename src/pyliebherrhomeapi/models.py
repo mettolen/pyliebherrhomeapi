@@ -93,6 +93,7 @@ class ControlType(StrEnum):
     ICE_MAKER = "IceMakerControl"
     HYDRO_BREEZE = "HydroBreezeControl"
     BIO_FRESH_PLUS = "BioFreshPlusControl"
+    PRESENTATION_LIGHT = "PresentationLightControl"
 
 
 @dataclass(frozen=True, slots=True)
@@ -296,6 +297,26 @@ class BioFreshPlusControl:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class PresentationLightControl:
+    """Presentation light control information."""
+
+    name: str
+    type: str
+    value: int | None = None
+    max: int | None = None
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> PresentationLightControl:
+        """Create PresentationLightControl from API response."""
+        return cls(
+            name=data["name"],
+            type=data["type"],
+            value=data.get("value"),
+            max=data.get("max"),
+        )
+
+
 DeviceControl = (
     TemperatureControl
     | ToggleControl
@@ -303,6 +324,7 @@ DeviceControl = (
     | IceMakerControl
     | HydroBreezeControl
     | BioFreshPlusControl
+    | PresentationLightControl
 )
 
 
@@ -391,6 +413,21 @@ class DeviceState:
                 result[control.zone_id] = control
         return result
 
+    def get_presentation_light_controls(
+        self,
+    ) -> dict[str, PresentationLightControl]:
+        """Get all presentation light controls keyed by control name.
+
+        Returns:
+            Dictionary mapping control name to presentation light control.
+
+        """
+        result: dict[str, PresentationLightControl] = {}
+        for control in self.controls:
+            if isinstance(control, PresentationLightControl):
+                result[control.name] = control
+        return result
+
     def get_control_by_name(self, name: str) -> DeviceControl | None:
         """Get control by name.
 
@@ -451,6 +488,8 @@ def parse_control(data: dict[str, Any]) -> DeviceControl:
         return HydroBreezeControl.from_dict(data)
     if control_type == ControlType.BIO_FRESH_PLUS.value:
         return BioFreshPlusControl.from_dict(data)
+    if control_type == ControlType.PRESENTATION_LIGHT.value:
+        return PresentationLightControl.from_dict(data)
 
     # Fallback to ToggleControl for unknown types
     return ToggleControl.from_dict(data)
