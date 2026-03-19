@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-03-18
+
+### Added
+
+- Added `PresentationLightControl` model and `ControlType.PRESENTATION_LIGHT` enum value
+- Added `DeviceState.get_presentation_light_controls()` method
+- Exported `PresentationLightControl`, `ControlType`, and `parse_control` from the public API
+- Added GitHub Copilot instructions for the project
+
+### Changed
+
+- **Breaking**: Bumped minimum Python version from 3.11 to 3.12
+- **Breaking**: Changed `DeviceState.get_toggle_controls()` to return `dict[str, ToggleControl]` keyed by control name instead of `dict[int | None, ToggleControl]` keyed by zone_id
+- Made all dataclasses frozen and slotted (`frozen=True, slots=True`)
+- Replaced `TypeVar` with Python 3.12 type parameter syntax in `_coerce_enum()`
+- Refactored error handling in `LiebherrClient._request()` to read the response body once instead of consuming the stream twice
+- Moved `__all__` definitions from individual modules to `__init__.py`
+- Added `__repr__` to `LiebherrClient`
+- Updated README badges and documentation
+
 ## [0.3.0] - 2026-02-19
 
 ### Changed
