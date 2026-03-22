@@ -66,14 +66,10 @@ from .models import (
 
 _LOGGER = logging.getLogger(__name__)
 
-
-def _get_version() -> str:
-    """Return installed package version with a safe fallback."""
-
-    try:
-        return version("pyliebherrhomeapi")
-    except PackageNotFoundError:
-        return "0.0.0"
+try:
+    _VERSION = version("pyliebherrhomeapi")
+except PackageNotFoundError:
+    _VERSION = "0.0.0"
 
 
 class LiebherrClient:
@@ -100,7 +96,7 @@ class LiebherrClient:
         self._timeout = timeout
         self._base_url = base_url.rstrip("/")
         self._own_session = session is None
-        self._user_agent = f"pyliebherrhomeapi/{_get_version()}"
+        self._user_agent = f"pyliebherrhomeapi/{_VERSION}"
         _LOGGER.debug(
             "Initialized LiebherrClient "
             "(base_url=%s, timeout=%ds, external_session=%s)",

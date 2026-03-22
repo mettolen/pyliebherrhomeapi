@@ -25,7 +25,7 @@ from pyliebherrhomeapi import (
     LiebherrUnsupportedError,
     TemperatureUnit,
 )
-from pyliebherrhomeapi.client import _get_version
+from pyliebherrhomeapi.client import _VERSION
 
 API_KEY = "test-api-key"
 DEVICE_ID = "12.345.678.9"
@@ -532,15 +532,10 @@ class TestErrorHandling:
 class TestVersionFallback:
     """Tests for version fallback handling."""
 
-    def test_get_version_fallback(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Return fallback version when package metadata is missing."""
-
-        monkeypatch.setattr(
-            "pyliebherrhomeapi.client.version",
-            MagicMock(side_effect=PackageNotFoundError()),
-        )
-
-        assert _get_version() == "0.0.0"
+    def test_get_version_fallback(self) -> None:
+        """Module-level _VERSION is resolved at import time."""
+        assert isinstance(_VERSION, str)
+        assert _VERSION != ""
 
     def test_module_version_fallback(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Reload module to apply version fallback when metadata missing."""
