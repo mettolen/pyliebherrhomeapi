@@ -53,3 +53,6 @@ ZONE_BOTTOM = "bottom"
 DOOR_CLOSED = "closed"
 DOOR_OPEN = "open"
 DOOR_MOVING = "moving"
+
+# Default max brightness for presentation light if not provided by API
+DEFAULT_PRESENTATION_LIGHT_MAX_BRIGHTNESS = 5
