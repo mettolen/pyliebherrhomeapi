@@ -10,6 +10,8 @@ import aiohttp
 import pytest
 from aiohttp.client_exceptions import ContentTypeError
 
+import pyliebherrhomeapi
+import pyliebherrhomeapi.client as pyliebherrhomeapi_client
 from pyliebherrhomeapi import (
     BioFreshPlusMode,
     HydroBreezeMode,
@@ -539,14 +541,22 @@ class TestVersionFallback:
 
     def test_module_version_fallback(self, monkeypatch: pytest.MonkeyPatch) -> None:
         """Reload module to apply version fallback when metadata missing."""
-
-        import pyliebherrhomeapi as module
-
         monkeypatch.setattr(
             "importlib.metadata.version",
             MagicMock(side_effect=PackageNotFoundError()),
         )
 
-        reloaded = importlib.reload(module)
+        reloaded = importlib.reload(pyliebherrhomeapi)
 
         assert reloaded.__version__ == "0.0.0"
+
+    def test_client_version_fallback(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Reload client module to cover _VERSION fallback branch."""
+        monkeypatch.setattr(
+            "importlib.metadata.version",
+            MagicMock(side_effect=PackageNotFoundError()),
+        )
+
+        reloaded = importlib.reload(pyliebherrhomeapi_client)
+
+        assert reloaded._VERSION == "0.0.0"
