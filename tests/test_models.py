@@ -294,12 +294,14 @@ class TestHydroBreezeControl:
             "name": "hydrobreeze",
             "type": "HydroBreezeControl",
             "zoneId": 0,
+            "zonePosition": "top",
             "currentMode": "HIGH",
         }
         control = HydroBreezeControl.from_dict(data)
         assert control.name == "hydrobreeze"
         assert control.type == "HydroBreezeControl"
         assert control.zone_id == 0
+        assert control.zone_position == ZonePosition.TOP
         assert control.current_mode == HydroBreezeMode.HIGH
 
     def test_hydro_breeze_control_from_dict_minimal(self) -> None:
@@ -308,6 +310,7 @@ class TestHydroBreezeControl:
         control = HydroBreezeControl.from_dict(data)
         assert control.name == "hydrobreeze"
         assert control.zone_id == 0
+        assert control.zone_position is None
         assert control.current_mode is None
 
 
@@ -320,6 +323,7 @@ class TestBioFreshPlusControl:
             "name": "biofreshplus",
             "type": "BioFreshPlusControl",
             "zoneId": 0,
+            "zonePosition": "middle",
             "currentMode": "ZERO_ZERO",
             "supportedModes": ["ZERO_ZERO", "ZERO_MINUS_TWO"],
             "temperatureUnit": "°C",
@@ -328,6 +332,7 @@ class TestBioFreshPlusControl:
         assert control.name == "biofreshplus"
         assert control.type == "BioFreshPlusControl"
         assert control.zone_id == 0
+        assert control.zone_position == ZonePosition.MIDDLE
         assert control.current_mode == BioFreshPlusMode.ZERO_ZERO
         assert len(control.supported_modes) == 2
         assert BioFreshPlusMode.ZERO_ZERO in control.supported_modes
@@ -339,6 +344,7 @@ class TestBioFreshPlusControl:
         control = BioFreshPlusControl.from_dict(data)
         assert control.name == "biofreshplus"
         assert control.zone_id == 0
+        assert control.zone_position is None
         assert control.current_mode is None
         assert len(control.supported_modes) == 0
         assert control.temperature_unit is None

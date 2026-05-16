@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from enum import Enum, StrEnum
 from typing import Any
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def _coerce_enum[EnumT: Enum](
@@ -255,6 +258,7 @@ class HydroBreezeControl:
     name: str
     type: str
     zone_id: int
+    zone_position: ZonePosition | str | None = None
     current_mode: HydroBreezeMode | str | None = None
 
     @classmethod
@@ -264,6 +268,7 @@ class HydroBreezeControl:
             name=data["name"],
             type=data["type"],
             zone_id=data["zoneId"],
+            zone_position=_coerce_enum(ZonePosition, data.get("zonePosition")),
             current_mode=_coerce_enum(HydroBreezeMode, data.get("currentMode")),
         )
 
@@ -275,6 +280,7 @@ class BioFreshPlusControl:
     name: str
     type: str
     zone_id: int
+    zone_position: ZonePosition | str | None = None
     current_mode: BioFreshPlusMode | str | None = None
     supported_modes: list[BioFreshPlusMode | str] = field(default_factory=list)
     temperature_unit: TemperatureUnit | str | None = None
@@ -291,6 +297,7 @@ class BioFreshPlusControl:
             name=data["name"],
             type=data["type"],
             zone_id=data["zoneId"],
+            zone_position=_coerce_enum(ZonePosition, data.get("zonePosition")),
             current_mode=_coerce_enum(BioFreshPlusMode, data.get("currentMode")),
             supported_modes=supported,
             temperature_unit=_coerce_enum(TemperatureUnit, data.get("temperatureUnit")),
@@ -492,4 +499,11 @@ def parse_control(data: dict[str, Any]) -> DeviceControl:
         return PresentationLightControl.from_dict(data)
 
     # Fallback to ToggleControl for unknown types
+    _LOGGER.warning(
+        "Unknown control type '%s' for control '%s', falling back to ToggleControl. "
+        "Raw data: %s",
+        control_type,
+        data.get("name"),
+        data,
+    )
     return ToggleControl.from_dict(data)

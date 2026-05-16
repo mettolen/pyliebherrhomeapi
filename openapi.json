@@ -885,6 +885,37 @@
         }
       }
     },
+    "/v1/sse/devices/{deviceId}/controls": {
+      "get": {
+        "tags": ["Manage Controls v1 SSE"],
+        "operationId": "getRealtimeControls",
+        "parameters": [
+          {
+            "name": "deviceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ServerSentEventListDeviceControl"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/devices": {
       "get": {
         "tags": ["Get Devices"],
@@ -973,6 +1004,9 @@
                         "$ref": "#/components/schemas/IceMaker"
                       },
                       {
+                        "$ref": "#/components/schemas/PresentationLight"
+                      },
+                      {
                         "$ref": "#/components/schemas/Temperature"
                       },
                       {
@@ -1051,6 +1085,9 @@
                       },
                       {
                         "$ref": "#/components/schemas/IceMaker"
+                      },
+                      {
+                        "$ref": "#/components/schemas/PresentationLight"
                       },
                       {
                         "$ref": "#/components/schemas/Temperature"
@@ -1285,6 +1322,9 @@
         },
         "required": ["bioFreshPlusMode", "zoneId"]
       },
+      "ServerSentEventListDeviceControl": {
+        "type": "object"
+      },
       "Device": {
         "type": "object",
         "description": "A filtered representation of a device",
@@ -1379,6 +1419,12 @@
                 "format": "int32",
                 "description": "position of the zone in the device as integer"
               },
+              "zonePosition": {
+                "type": "string",
+                "description": "position of the zone in the device. One of top, middle, bottom",
+                "enum": ["top", "middle", "bottom"],
+                "example": "top"
+              },
               "currentMode": {
                 "type": "string",
                 "description": "The current BioFresh plus mode",
@@ -1449,6 +1495,12 @@
                 "format": "int32",
                 "description": "position of the zone in the device as integer"
               },
+              "zonePosition": {
+                "type": "string",
+                "description": "position of the zone in the device. One of top, middle, bottom",
+                "enum": ["top", "middle", "bottom"],
+                "example": "top"
+              },
               "currentMode": {
                 "type": "string",
                 "description": "The current value of hydrobreeze: [OFF, LOW, MEDIUM, HIGH]",
@@ -1502,6 +1554,41 @@
           }
         ],
         "description": "An IceMaker tile and configuration"
+      },
+      "PresentationLight": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/DeviceControl"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "name of the control",
+                "example": "PresentationLight"
+              },
+              "type": {
+                "type": "string",
+                "description": "type of the control",
+                "example": "PresentationLightControl"
+              },
+              "value": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The current value of the presentation light",
+                "example": 3
+              },
+              "max": {
+                "type": "integer",
+                "format": "int32",
+                "description": "The maximum value of the presentation light",
+                "example": 5
+              }
+            }
+          }
+        ],
+        "description": "A presentation light tile and configuration"
       },
       "Temperature": {
         "allOf": [
