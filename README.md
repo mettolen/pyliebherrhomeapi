@@ -25,6 +25,7 @@ This library is used by the [Liebherr](https://www.home-assistant.io/integration
 - 💧 **HydroBreeze and BioFreshPlus** mode management
 - 🚪 **Auto door** control for supported appliances
 - 📱 **Device management** - list and query all connected appliances
+- 📡 **Realtime updates via Server-Sent Events (SSE)** _(beta)_ - subscribe to live control state changes
 - 🛡️ **Type hints** for better IDE support and development experience
 - ✅ **Input validation** with proper error handling
 - 📊 **Comprehensive data models** for all control types
@@ -109,7 +110,7 @@ if __name__ == "__main__":
 
 ### Polling Recommendations
 
-⚠️ **Beta Version Notice**: The API currently doesn't push updates, so endpoints need to be polled regularly.
+⚠️ **Beta Version Notice**: The REST endpoints do not push updates, so they need to be polled regularly. For realtime updates without polling, see the [Realtime Updates (SSE)](#realtime-updates-sse-beta) section below.
 
 **Recommended polling intervals:**
 
@@ -305,6 +306,44 @@ async def main():
         if devices:
             await poll_device_state(client, devices[0].device_id)
 ```
+
+### Realtime Updates (SSE) _(beta)_
+
+⚠️ **Beta**: The SSE endpoint is in beta on the Liebherr side and not yet part of the official OpenAPI spec. The payload format is based on observed traffic and may change.
+
+The client subscribes to `/v1/sse/devices/{deviceId}/controls` and yields a list of parsed controls on each update. Based on observed traffic, the server sends a snapshot of all controls then closes the connection, so you must reconnect to keep receiving updates. Malformed events are logged and skipped.
+
+#### Recommended: `stream_controls_forever()`
+
+Reconnects automatically with exponential backoff + jitter on recoverable errors (drops, timeouts, 5xx) and clean closures. Non-recoverable errors (`LiebherrAuthenticationError`, `LiebherrNotFoundError`, `LiebherrPreconditionFailedError`) are re-raised. Optional non-blocking `on_connect` / `on_disconnect` callbacks let you track availability (e.g. in a Home Assistant integration); an exception in a callback is logged and does not break the stream.
+
+```python
+import asyncio
+from pyliebherrhomeapi import LiebherrClient
+
+async def main() -> None:
+    async with LiebherrClient(api_key="your-api-key") as client:
+        devices = await client.get_devices()
+        if not devices:
+            return
+
+        async for controls in client.stream_controls_forever(
+            devices[0].device_id,
+            on_connect=lambda: print("SSE connected"),
+            on_disconnect=lambda: print("SSE disconnected, reconnecting..."),
+        ):
+            for control in controls:
+                zone_id = getattr(control, "zone_id", None)
+                print(f"Update: {control.name} (zone={zone_id}) -> {control}")
+
+asyncio.run(main())
+```
+
+#### Low-level: `stream_controls()`
+
+Opens a single connection and yields events until it ends. Use it only if you want to manage reconnection yourself; otherwise prefer `stream_controls_forever()`.
+
+**SSE vs. polling:** prefer SSE for low-latency, self-healing subscriptions (e.g. a long-running Home Assistant integration); prefer polling for simple scripts or environments where long-lived connections are problematic.
 
 ## Logging
 

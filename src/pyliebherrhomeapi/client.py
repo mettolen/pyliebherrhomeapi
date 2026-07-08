@@ -19,7 +19,11 @@ Important Notes:
 
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
+import random
+from collections.abc import AsyncIterator, Callable
 from importlib.metadata import PackageNotFoundError, version
 from types import TracebackType
 from typing import Any, Self
@@ -41,6 +45,8 @@ from .const import (
     CONTROL_SUPER_FROST,
     CONTROL_TEMPERATURE,
     DEFAULT_TIMEOUT,
+    SSE_RECONNECT_BASE_DELAY,
+    SSE_RECONNECT_MAX_DELAY,
 )
 from .exceptions import (
     LiebherrAuthenticationError,
@@ -70,6 +76,42 @@ try:
     _VERSION = version("pyliebherrhomeapi")
 except PackageNotFoundError:
     _VERSION = "0.0.0"
+
+
+def _parse_sse_event(payload: str) -> list[DeviceControl] | None:
+    """Parse a single SSE ``data`` payload into a list of controls.
+
+    The payload is expected to be JSON containing either a single control
+    object or a list of control objects. Anything else is logged and dropped
+    so a malformed event does not kill the stream.
+    """
+    try:
+        data = json.loads(payload)
+    except ValueError:
+        _LOGGER.warning("Failed to decode SSE payload as JSON: %r", payload)
+        return None
+
+    if isinstance(data, dict):
+        items: list[Any] = [data]
+    elif isinstance(data, list):
+        items = data
+    else:
+        _LOGGER.warning(
+            "Unexpected SSE payload (expected list or dict, got %s)",
+            type(data).__name__,
+        )
+        return None
+
+    controls: list[DeviceControl] = []
+    for item in items:
+        if not isinstance(item, dict):
+            _LOGGER.warning("Skipping non-dict SSE item: %r", item)
+            continue
+        try:
+            controls.append(parse_control(item))
+        except (KeyError, ValueError, TypeError) as err:
+            _LOGGER.warning("Failed to parse SSE control %r: %s", item, err)
+    return controls
 
 
 class LiebherrClient:
@@ -638,6 +680,242 @@ class LiebherrClient:
         device = await self.get_device(device_id)
         controls = await self.get_controls(device_id)
         return DeviceState(device=device, controls=controls)
+
+    async def stream_controls(
+        self, device_id: str
+    ) -> AsyncIterator[list[DeviceControl]]:
+        """Stream realtime control updates for a device via Server-Sent Events.
+
+        Opens a long-lived connection to the SSE endpoint and yields a list of
+        parsed controls each time the server pushes an update. The connection
+        stays open until the consumer stops iterating, an error occurs, or the
+        server closes the stream.
+
+        The Liebherr OpenAPI spec does not currently document the SSE event
+        payload schema. Based on observed traffic, the ``data:`` field of each
+        event contains a JSON list of control objects matching the regular
+        ``/controls`` response. The first event after connecting carries the
+        full set of controls; subsequent events contain only the controls
+        whose state has changed (deltas), so consumers should merge each
+        update into their cached state rather than replacing it. A single
+        control object (rather than a list) is also accepted. Events whose
+        payload cannot be parsed are skipped with a warning so a single bad
+        event does not terminate the stream.
+
+        Args:
+            device_id: The device ID (serial number).
+
+        Yields:
+            List of :class:`DeviceControl` objects parsed from each SSE event.
+
+        Raises:
+            LiebherrAuthenticationError: If authentication fails.
+            LiebherrNotFoundError: If device is not reachable.
+            LiebherrPreconditionFailedError: If device is not onboarded.
+            LiebherrServerError: If the server returns a 5xx response.
+            LiebherrConnectionError: If the connection fails or drops.
+            LiebherrTimeoutError: If the initial connection times out.
+
+        """
+        url = f"{self._base_url}/{API_VERSION}/sse/devices/{device_id}/controls"
+        headers = {
+            "api-key": self._api_key,
+            "User-Agent": self._user_agent,
+            "Accept": "text/event-stream",
+            "Cache-Control": "no-cache",
+        }
+        session = await self._get_session()
+
+        _LOGGER.debug("Opening SSE stream for device %s", device_id)
+
+        # Disable read/total timeouts so the stream can stay open indefinitely;
+        # keep a connect timeout so a stuck handshake still fails fast.
+        stream_timeout = aiohttp.ClientTimeout(
+            total=None, sock_read=None, sock_connect=self._timeout
+        )
+
+        try:
+            response_cm = session.get(url, headers=headers, timeout=stream_timeout)
+        except aiohttp.ClientError as ex:
+            raise LiebherrConnectionError(f"Connection error: {ex}") from ex
+
+        try:
+            async with response_cm as response:
+                self._raise_for_sse_status(response, device_id)
+
+                data_lines: list[str] = []
+                try:
+                    async for raw_line in response.content:
+                        line = raw_line.decode("utf-8", errors="replace").rstrip("\r\n")
+                        if line == "":
+                            # Dispatch the buffered event on empty line.
+                            if data_lines:
+                                controls = _parse_sse_event("\n".join(data_lines))
+                                data_lines = []
+                                if controls is not None:
+                                    yield controls
+                            continue
+                        if line.startswith(":"):
+                            # SSE comment / keep-alive
+                            continue
+                        if line.startswith("data:"):
+                            value = line[5:]
+                            # Per spec, a single leading space is stripped.
+                            if value.startswith(" "):
+                                value = value[1:]
+                            data_lines.append(value)
+                        # Other fields (e.g. event, id, retry) are ignored.
+
+                    # Flush a final event if the server closed without a
+                    # terminating blank line.
+                    if data_lines:
+                        controls = _parse_sse_event("\n".join(data_lines))
+                        if controls is not None:
+                            yield controls
+                except (TimeoutError, aiohttp.ServerTimeoutError) as ex:
+                    raise LiebherrTimeoutError("SSE stream timed out") from ex
+                except aiohttp.ClientError as ex:
+                    raise LiebherrConnectionError(f"SSE stream error: {ex}") from ex
+        except (TimeoutError, aiohttp.ServerTimeoutError) as ex:
+            raise LiebherrTimeoutError("Timeout connecting to SSE stream") from ex
+        except aiohttp.ClientError as ex:
+            raise LiebherrConnectionError(f"Connection error: {ex}") from ex
+
+    @staticmethod
+    def _raise_for_sse_status(response: aiohttp.ClientResponse, device_id: str) -> None:
+        """Translate non-success SSE status codes to library exceptions."""
+        status = response.status
+        if status == 200:
+            return
+        if status == 401:
+            raise LiebherrAuthenticationError("Authentication failed")
+        if status == 404:
+            raise LiebherrNotFoundError(f"Device {device_id} is not reachable")
+        if status == 412:
+            raise LiebherrPreconditionFailedError(
+                f"Device {device_id} is not onboarded"
+            )
+        if 500 <= status < 600:
+            raise LiebherrServerError(f"Server error opening SSE stream: {status}")
+        raise LiebherrConnectionError(f"Unexpected status {status} opening SSE stream")
+
+    def _sse_reconnect_delay(
+        self, attempt: int, base_delay: float, max_delay: float
+    ) -> float:
+        """Compute the reconnect delay for an SSE stream.
+
+        Uses exponential backoff capped at ``max_delay`` with "equal jitter"
+        (half fixed, half random) to avoid a reconnect stampede.
+        """
+        delay = min(base_delay * 2**attempt, max_delay)
+        jitter = random.uniform(0, delay / 2)
+        return float(delay / 2 + jitter)
+
+    async def stream_controls_forever(
+        self,
+        device_id: str,
+        *,
+        base_delay: float = SSE_RECONNECT_BASE_DELAY,
+        max_delay: float = SSE_RECONNECT_MAX_DELAY,
+        on_connect: Callable[[], None] | None = None,
+        on_disconnect: Callable[[], None] | None = None,
+    ) -> AsyncIterator[list[DeviceControl]]:
+        """Stream control updates, reconnecting automatically on failure.
+
+        Wraps :meth:`stream_controls` in a resilient loop: recoverable errors
+        (connection drops, timeouts, and 5xx server errors) and clean stream
+        closures trigger a reconnect after an exponential backoff delay with
+        jitter. The backoff resets after any successfully received event.
+
+        Non-recoverable errors are re-raised without retrying, since retrying
+        cannot succeed without caller intervention:
+
+        - :class:`LiebherrAuthenticationError` (bad API key)
+        - :class:`LiebherrNotFoundError` (device not reachable)
+        - :class:`LiebherrPreconditionFailedError` (device not onboarded)
+
+        This generator only stops when the consumer stops iterating or a
+        non-recoverable error is raised; otherwise it reconnects indefinitely.
+
+        The optional ``on_connect`` / ``on_disconnect`` callbacks let a consumer
+        (e.g. a Home Assistant coordinator) track availability. ``on_connect``
+        fires when the first event arrives after (re)connecting; ``on_disconnect``
+        fires when a recoverable drop or clean close schedules a reconnect. They
+        are not called for non-recoverable errors or when the consumer stops
+        iterating, since those terminate the generator and are observable
+        directly. Callbacks must be non-blocking (HA ``@callback`` style); an
+        exception raised by a callback is logged and does not break the stream.
+
+        Args:
+            device_id: The device ID (serial number).
+            base_delay: Initial reconnect delay in seconds.
+            max_delay: Maximum reconnect delay in seconds.
+            on_connect: Called once each time the stream (re)connects.
+            on_disconnect: Called each time the stream drops and a reconnect
+                is scheduled.
+
+        Yields:
+            List of :class:`DeviceControl` objects parsed from each SSE event.
+
+        Raises:
+            LiebherrAuthenticationError: If authentication fails.
+            LiebherrNotFoundError: If the device is not reachable.
+            LiebherrPreconditionFailedError: If the device is not onboarded.
+
+        """
+        attempt = 0
+        connected = False
+        while True:
+            try:
+                async for controls in self.stream_controls(device_id):
+                    attempt = 0
+                    if not connected:
+                        connected = True
+                        self._run_stream_callback(on_connect, device_id, "on_connect")
+                    yield controls
+            except (
+                LiebherrConnectionError,
+                LiebherrTimeoutError,
+                LiebherrServerError,
+            ) as err:
+                # Recoverable: reconnect after a backoff delay.
+                # Non-recoverable errors (auth, not-found, precondition) are
+                # not caught here and propagate to the caller.
+                delay = self._sse_reconnect_delay(attempt, base_delay, max_delay)
+                _LOGGER.debug(
+                    "SSE stream for %s dropped (%s); reconnecting in %.1fs",
+                    device_id,
+                    err,
+                    delay,
+                )
+            else:
+                delay = self._sse_reconnect_delay(attempt, base_delay, max_delay)
+                _LOGGER.debug(
+                    "SSE stream for %s ended; reconnecting in %.1fs",
+                    device_id,
+                    delay,
+                )
+            if connected:
+                connected = False
+                self._run_stream_callback(on_disconnect, device_id, "on_disconnect")
+            attempt += 1
+            await asyncio.sleep(delay)
+
+    @staticmethod
+    def _run_stream_callback(
+        callback: Callable[[], None] | None, device_id: str, name: str
+    ) -> None:
+        """Invoke a stream state callback, swallowing and logging errors.
+
+        A consumer-provided callback must never break the reconnect loop, so
+        any exception it raises is logged instead of propagated.
+        """
+        if callback is None:
+            return
+        try:
+            callback()
+        except Exception:  # pylint: disable=broad-exception-caught
+            _LOGGER.exception("SSE %s callback for %s raised", name, device_id)
 
     async def refresh_device(self, device_id: str) -> DeviceState:
         """Refresh and return current device state.

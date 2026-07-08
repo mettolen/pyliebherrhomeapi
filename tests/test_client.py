@@ -1,8 +1,12 @@
 """Tests for Liebherr client."""
 # pylint: disable=redefined-outer-name, protected-access
+# pylint: disable=unused-argument, unreachable, too-few-public-methods
+# pylint: disable=too-many-lines, too-many-positional-arguments, too-many-arguments
 
+import asyncio
 import importlib
 from importlib.metadata import PackageNotFoundError
+from types import ModuleType
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -315,36 +319,90 @@ class TestSetterMethods:
     """Tests for all setter methods using parametrization."""
 
     @pytest.mark.parametrize(
-        ("method_name", "kwargs"),
+        ("method_name", "kwargs", "control", "expected_json"),
         [
             (
                 "set_temperature",
                 {"zone_id": 0, "target": 4, "unit": TemperatureUnit.CELSIUS},
+                "temperature",
+                {"zoneId": 0, "target": 4, "unit": "\u00b0C"},
             ),
-            ("set_super_frost", {"zone_id": 0, "value": True}),
-            ("set_super_cool", {"zone_id": 0, "value": True}),
-            ("set_presentation_light", {"target": 50}),
-            ("set_ice_maker", {"zone_id": 0, "mode": IceMakerMode.MAX_ICE}),
-            ("set_hydro_breeze", {"zone_id": 0, "mode": HydroBreezeMode.HIGH}),
-            ("set_bio_fresh_plus", {"zone_id": 0, "mode": BioFreshPlusMode.ZERO_ZERO}),
-            ("trigger_auto_door", {"zone_id": 0, "value": True}),
-            ("set_party_mode", {"value": True}),
-            ("set_night_mode", {"value": True}),
+            (
+                "set_super_frost",
+                {"zone_id": 0, "value": True},
+                "superfrost",
+                {"zoneId": 0, "value": True},
+            ),
+            (
+                "set_super_cool",
+                {"zone_id": 0, "value": True},
+                "supercool",
+                {"zoneId": 0, "value": True},
+            ),
+            (
+                "set_presentation_light",
+                {"target": 50},
+                "presentationlight",
+                {"target": 50},
+            ),
+            (
+                "set_ice_maker",
+                {"zone_id": 0, "mode": IceMakerMode.MAX_ICE},
+                "icemaker",
+                {"zoneId": 0, "iceMakerMode": "MAX_ICE"},
+            ),
+            (
+                "set_hydro_breeze",
+                {"zone_id": 0, "mode": HydroBreezeMode.HIGH},
+                "hydrobreeze",
+                {"zoneId": 0, "hydroBreezeMode": "HIGH"},
+            ),
+            (
+                "set_bio_fresh_plus",
+                {"zone_id": 0, "mode": BioFreshPlusMode.ZERO_ZERO},
+                "biofreshplus",
+                {"zoneId": 0, "bioFreshPlusMode": "ZERO_ZERO"},
+            ),
+            (
+                "trigger_auto_door",
+                {"zone_id": 0, "value": True},
+                "autodoor",
+                {"zoneId": 0, "value": True},
+            ),
+            (
+                "set_party_mode",
+                {"value": True},
+                "partymode",
+                {"value": True},
+            ),
+            (
+                "set_night_mode",
+                {"value": True},
+                "nightmode",
+                {"value": True},
+            ),
         ],
     )
     async def test_setter_methods(
         self,
         client: LiebherrClient,
+        mock_session: MagicMock,
         mock_response: MagicMock,
         method_name: str,
         kwargs: dict[str, Any],
+        control: str,
+        expected_json: dict[str, Any],
     ) -> None:
-        """Test all setter methods."""
+        """Each setter POSTs the expected control endpoint and payload."""
         mock_response.status = 204
 
         method = getattr(client, method_name)
         await method(device_id=DEVICE_ID, **kwargs)
-        # Should not raise
+
+        args, call_kwargs = mock_session.request.call_args
+        assert args[0] == "POST"
+        assert args[1].endswith(f"/v1/devices/{DEVICE_ID}/controls/{control}")
+        assert call_kwargs["json"] == expected_json
 
 
 class TestConvenienceMethods:
@@ -539,24 +597,545 @@ class TestVersionFallback:
         assert isinstance(_VERSION, str)
         assert _VERSION != ""
 
-    def test_module_version_fallback(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Reload module to apply version fallback when metadata missing."""
+    @pytest.mark.parametrize(
+        ("module", "attr"),
+        [
+            (pyliebherrhomeapi, "__version__"),
+            (pyliebherrhomeapi_client, "_VERSION"),
+        ],
+        ids=["package", "client"],
+    )
+    def test_version_fallback_on_missing_metadata(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        module: ModuleType,
+        attr: str,
+    ) -> None:
+        """Reloading a module applies the '0.0.0' fallback when metadata missing."""
         monkeypatch.setattr(
             "importlib.metadata.version",
             MagicMock(side_effect=PackageNotFoundError()),
         )
 
-        reloaded = importlib.reload(pyliebherrhomeapi)
+        reloaded = importlib.reload(module)
 
-        assert reloaded.__version__ == "0.0.0"
+        assert getattr(reloaded, attr) == "0.0.0"
 
-    def test_client_version_fallback(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Reload client module to cover _VERSION fallback branch."""
-        monkeypatch.setattr(
-            "importlib.metadata.version",
-            MagicMock(side_effect=PackageNotFoundError()),
+
+class _FakeContent:
+    """Async-iterable stand-in for aiohttp's ``response.content``.
+
+    Yields the supplied byte lines one at a time, mirroring how
+    ``async for raw_line in response.content`` behaves over a real
+    ``StreamReader``. If ``raise_after`` is given, that exception is raised
+    once all lines are exhausted (instead of ``StopAsyncIteration``) to
+    simulate a mid-stream failure.
+    """
+
+    def __init__(
+        self, lines: list[bytes], raise_after: BaseException | None = None
+    ) -> None:
+        self._lines = list(lines)
+        self._raise_after = raise_after
+
+    def __aiter__(self) -> "_FakeContent":
+        return self
+
+    async def __anext__(self) -> bytes:
+        if not self._lines:
+            if self._raise_after is not None:
+                raise self._raise_after
+            raise StopAsyncIteration
+        return self._lines.pop(0)
+
+
+def _make_sse_response(
+    lines: list[bytes],
+    status: int = 200,
+    raise_after: BaseException | None = None,
+) -> MagicMock:
+    """Build a mock response usable as an async context manager."""
+    response = MagicMock()
+    response.status = status
+    response.content = _FakeContent(lines, raise_after=raise_after)
+    response.__aenter__ = AsyncMock(return_value=response)
+    response.__aexit__ = AsyncMock(return_value=None)
+    return response
+
+
+def _set_sse_response(session: MagicMock, response: MagicMock) -> None:
+    """Wire session.get to return the given response."""
+    session.get = MagicMock(return_value=response)
+
+
+class TestStreamControls:
+    """Tests for the SSE-based realtime controls stream."""
+
+    async def test_yields_parsed_control_lists(
+        self, client: LiebherrClient, mock_session: MagicMock
+    ) -> None:
+        """Two well-formed events are parsed into two lists of controls."""
+        payload_one = (
+            '[{"name":"temperature","type":"TemperatureControl",'
+            '"zoneId":0,"value":4,"target":4,"unit":"\u00b0C"}]'
         )
+        payload_two = '[{"name":"superfrost","type":"ToggleControl","value":true}]'
+        lines = [
+            f"data: {payload_one}\n".encode(),
+            b"\n",
+            b": keep-alive\n",
+            f"data: {payload_two}\n".encode(),
+            b"\n",
+        ]
+        _set_sse_response(mock_session, _make_sse_response(lines))
 
-        reloaded = importlib.reload(pyliebherrhomeapi_client)
+        received: list[list[Any]] = []
+        async for controls in client.stream_controls(DEVICE_ID):
+            received.append(controls)
 
-        assert reloaded._VERSION == "0.0.0"
+        assert len(received) == 2
+        assert received[0][0].name == "temperature"
+        assert received[0][0].value == 4
+        assert received[1][0].name == "superfrost"
+        assert received[1][0].value is True
+
+    async def test_single_dict_payload_is_wrapped_in_list(
+        self, client: LiebherrClient, mock_session: MagicMock
+    ) -> None:
+        """A dict (rather than a list) payload yields a one-item list."""
+        payload = '{"name":"partymode","type":"ToggleControl","value":false}'
+        lines = [f"data: {payload}\n".encode(), b"\n"]
+        _set_sse_response(mock_session, _make_sse_response(lines))
+
+        received: list[list[Any]] = []
+        async for controls in client.stream_controls(DEVICE_ID):
+            received.append(controls)
+
+        assert len(received) == 1
+        assert len(received[0]) == 1
+        assert received[0][0].name == "partymode"
+
+    async def test_final_event_flushed_without_trailing_blank_line(
+        self, client: LiebherrClient, mock_session: MagicMock
+    ) -> None:
+        """A buffered event is emitted when the server closes the stream."""
+        payload = '[{"name":"nightmode","type":"ToggleControl","value":true}]'
+        lines = [f"data: {payload}\n".encode()]
+        _set_sse_response(mock_session, _make_sse_response(lines))
+
+        received = [c async for c in client.stream_controls(DEVICE_ID)]
+
+        assert len(received) == 1
+        assert received[0][0].name == "nightmode"
+
+    async def test_malformed_json_is_skipped(
+        self, client: LiebherrClient, mock_session: MagicMock
+    ) -> None:
+        """A bad JSON event is dropped; subsequent good events still arrive."""
+        good = '[{"name":"partymode","type":"ToggleControl","value":true}]'
+        lines = [
+            b"data: not-json\n",
+            b"\n",
+            f"data: {good}\n".encode(),
+            b"\n",
+        ]
+        _set_sse_response(mock_session, _make_sse_response(lines))
+
+        received = [c async for c in client.stream_controls(DEVICE_ID)]
+
+        assert len(received) == 1
+        assert received[0][0].name == "partymode"
+
+    async def test_non_object_payload_is_skipped(
+        self, client: LiebherrClient, mock_session: MagicMock
+    ) -> None:
+        """A JSON scalar payload is ignored."""
+        lines = [b"data: 42\n", b"\n"]
+        _set_sse_response(mock_session, _make_sse_response(lines))
+
+        received = [c async for c in client.stream_controls(DEVICE_ID)]
+
+        assert received == []
+
+    async def test_non_dict_list_items_are_skipped(
+        self, client: LiebherrClient, mock_session: MagicMock
+    ) -> None:
+        """List items that aren't objects are dropped, others are kept."""
+        good = '{"name":"partymode","type":"ToggleControl","value":true}'
+        lines = [f"data: [42, {good}]\n".encode(), b"\n"]
+        _set_sse_response(mock_session, _make_sse_response(lines))
+
+        received = [c async for c in client.stream_controls(DEVICE_ID)]
+
+        assert len(received) == 1
+        assert len(received[0]) == 1
+        assert received[0][0].name == "partymode"
+
+    async def test_invalid_control_object_is_skipped(
+        self, client: LiebherrClient, mock_session: MagicMock
+    ) -> None:
+        """A control object missing required keys is dropped with a warning."""
+        # Missing the required 'name' key triggers a KeyError in parse_control.
+        lines = [b'data: [{"type":"ToggleControl"}]\n', b"\n"]
+        _set_sse_response(mock_session, _make_sse_response(lines))
+
+        received = [c async for c in client.stream_controls(DEVICE_ID)]
+
+        assert len(received) == 1
+        assert received[0] == []
+
+    async def test_unauthorized_status_raises(
+        self, client: LiebherrClient, mock_session: MagicMock
+    ) -> None:
+        """HTTP 401 on the SSE handshake raises an auth error."""
+        _set_sse_response(mock_session, _make_sse_response([], status=401))
+
+        with pytest.raises(LiebherrAuthenticationError):
+            async for _ in client.stream_controls(DEVICE_ID):
+                pass
+
+    async def test_not_found_status_raises(
+        self, client: LiebherrClient, mock_session: MagicMock
+    ) -> None:
+        """HTTP 404 on the SSE handshake raises a not-found error."""
+        _set_sse_response(mock_session, _make_sse_response([], status=404))
+
+        with pytest.raises(LiebherrNotFoundError):
+            async for _ in client.stream_controls(DEVICE_ID):
+                pass
+
+    async def test_precondition_failed_status_raises(
+        self, client: LiebherrClient, mock_session: MagicMock
+    ) -> None:
+        """HTTP 412 on the SSE handshake raises a precondition error."""
+        _set_sse_response(mock_session, _make_sse_response([], status=412))
+
+        with pytest.raises(LiebherrPreconditionFailedError):
+            async for _ in client.stream_controls(DEVICE_ID):
+                pass
+
+    async def test_server_error_status_raises(
+        self, client: LiebherrClient, mock_session: MagicMock
+    ) -> None:
+        """HTTP 5xx on the SSE handshake raises a server error."""
+        _set_sse_response(mock_session, _make_sse_response([], status=503))
+
+        with pytest.raises(LiebherrServerError):
+            async for _ in client.stream_controls(DEVICE_ID):
+                pass
+
+    async def test_unexpected_status_raises_connection_error(
+        self, client: LiebherrClient, mock_session: MagicMock
+    ) -> None:
+        """Any other non-200 status surfaces as a connection error."""
+        _set_sse_response(mock_session, _make_sse_response([], status=418))
+
+        with pytest.raises(LiebherrConnectionError):
+            async for _ in client.stream_controls(DEVICE_ID):
+                pass
+
+    @pytest.mark.parametrize(
+        ("raise_after", "expected"),
+        [
+            (aiohttp.ClientError("connection reset"), LiebherrConnectionError),
+            (aiohttp.ServerTimeoutError("read timed out"), LiebherrTimeoutError),
+            (TimeoutError("read timed out"), LiebherrTimeoutError),
+        ],
+    )
+    async def test_mid_stream_error_is_wrapped(
+        self,
+        client: LiebherrClient,
+        mock_session: MagicMock,
+        raise_after: BaseException,
+        expected: type[Exception],
+    ) -> None:
+        """An error raised while iterating the stream is wrapped."""
+        _set_sse_response(mock_session, _make_sse_response([], raise_after=raise_after))
+
+        with pytest.raises(expected):
+            async for _ in client.stream_controls(DEVICE_ID):
+                pass
+
+    async def test_connect_timeout_raises_timeout_error(
+        self, client: LiebherrClient, mock_session: MagicMock
+    ) -> None:
+        """A timeout while establishing the SSE connection is wrapped."""
+        response_cm = MagicMock()
+        response_cm.__aenter__ = AsyncMock(side_effect=TimeoutError())
+        response_cm.__aexit__ = AsyncMock(return_value=None)
+        mock_session.get = MagicMock(return_value=response_cm)
+
+        with pytest.raises(LiebherrTimeoutError):
+            async for _ in client.stream_controls(DEVICE_ID):
+                pass
+
+    async def test_get_raising_client_error_is_wrapped(
+        self, client: LiebherrClient, mock_session: MagicMock
+    ) -> None:
+        """A synchronous ClientError from session.get is wrapped."""
+        mock_session.get = MagicMock(side_effect=aiohttp.ClientError("dns failure"))
+
+        with pytest.raises(LiebherrConnectionError):
+            async for _ in client.stream_controls(DEVICE_ID):
+                pass
+
+    async def test_aenter_client_error_is_wrapped(
+        self, client: LiebherrClient, mock_session: MagicMock
+    ) -> None:
+        """A ClientError from response.__aenter__ surfaces as ConnectionError."""
+        response_cm = MagicMock()
+        response_cm.__aenter__ = AsyncMock(
+            side_effect=aiohttp.ClientError("handshake failed")
+        )
+        response_cm.__aexit__ = AsyncMock(return_value=None)
+        mock_session.get = MagicMock(return_value=response_cm)
+
+        with pytest.raises(LiebherrConnectionError):
+            async for _ in client.stream_controls(DEVICE_ID):
+                pass
+
+
+class TestStreamReconnectDelay:
+    """Tests for the SSE reconnect backoff calculation."""
+
+    def test_reconnect_delay_grows_with_attempts(self, client: LiebherrClient) -> None:
+        """The base delay is used on the first attempt."""
+        delay = client._sse_reconnect_delay(0, 4.0, 60.0)
+        assert 2.0 <= delay <= 4.0
+
+    def test_reconnect_delay_is_capped_at_max(self, client: LiebherrClient) -> None:
+        """Exponential growth is capped at max_delay."""
+        delay = client._sse_reconnect_delay(20, 1.0, 10.0)
+        assert 5.0 <= delay <= 10.0
+
+
+class TestStreamControlsForever:
+    """Tests for the auto-reconnecting stream wrapper."""
+
+    async def test_reconnects_after_recoverable_error(
+        self,
+        client: LiebherrClient,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A recoverable error triggers a reconnect; events are relayed."""
+        calls: list[str] = []
+
+        async def fake_stream(device_id: str) -> Any:
+            calls.append(device_id)
+            if len(calls) == 1:
+                yield ["a"]
+                yield ["b"]
+                raise LiebherrConnectionError("drop")
+            raise LiebherrAuthenticationError("stop")
+
+        sleeps: list[float] = []
+
+        async def fake_sleep(delay: float) -> None:
+            sleeps.append(delay)
+
+        monkeypatch.setattr(client, "stream_controls", fake_stream)
+        monkeypatch.setattr(asyncio, "sleep", fake_sleep)
+
+        received: list[Any] = []
+        with pytest.raises(LiebherrAuthenticationError):
+            async for controls in client.stream_controls_forever(DEVICE_ID):
+                received.append(controls)
+
+        assert received == [["a"], ["b"]]
+        assert len(calls) == 2
+        assert len(sleeps) == 1
+
+    async def test_backoff_resets_after_successful_event(
+        self,
+        client: LiebherrClient,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """The backoff attempt counter resets after a yielded event."""
+        calls: list[str] = []
+
+        async def fake_stream(device_id: str) -> Any:
+            calls.append(device_id)
+            if len(calls) == 1:
+                yield ["a"]
+                raise LiebherrConnectionError("drop")
+            if len(calls) == 2:
+                raise LiebherrConnectionError("drop again")
+            raise LiebherrAuthenticationError("stop")
+
+        attempts: list[int] = []
+
+        def spy_delay(attempt: int, base_delay: float, max_delay: float) -> float:
+            attempts.append(attempt)
+            return 0.0
+
+        async def fake_sleep(delay: float) -> None:
+            return None
+
+        monkeypatch.setattr(client, "stream_controls", fake_stream)
+        monkeypatch.setattr(client, "_sse_reconnect_delay", spy_delay)
+        monkeypatch.setattr(asyncio, "sleep", fake_sleep)
+
+        with pytest.raises(LiebherrAuthenticationError):
+            async for _ in client.stream_controls_forever(DEVICE_ID):
+                pass
+
+        # First drop happens after a yield (attempt reset to 0); second drop
+        # occurs with no event received, so the attempt counter has advanced.
+        assert attempts == [0, 1]
+
+    async def test_reconnects_after_clean_stream_close(
+        self,
+        client: LiebherrClient,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A stream that ends without error still reconnects."""
+        calls: list[str] = []
+
+        async def fake_stream(device_id: str) -> Any:
+            calls.append(device_id)
+            if len(calls) == 1:
+                yield ["a"]
+                return
+            raise LiebherrAuthenticationError("stop")
+
+        async def fake_sleep(delay: float) -> None:
+            return None
+
+        monkeypatch.setattr(client, "stream_controls", fake_stream)
+        monkeypatch.setattr(asyncio, "sleep", fake_sleep)
+
+        received: list[Any] = []
+        with pytest.raises(LiebherrAuthenticationError):
+            async for controls in client.stream_controls_forever(DEVICE_ID):
+                received.append(controls)
+
+        assert received == [["a"]]
+        assert len(calls) == 2
+
+    async def test_non_recoverable_error_is_not_retried(
+        self,
+        client: LiebherrClient,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A non-recoverable error propagates without reconnecting."""
+        calls: list[str] = []
+
+        async def fake_stream(device_id: str) -> Any:
+            calls.append(device_id)
+            raise LiebherrNotFoundError("gone")
+            yield  # pragma: no cover - marks this as an async generator
+
+        sleeps: list[float] = []
+
+        async def fake_sleep(delay: float) -> None:
+            sleeps.append(delay)
+
+        monkeypatch.setattr(client, "stream_controls", fake_stream)
+        monkeypatch.setattr(asyncio, "sleep", fake_sleep)
+
+        with pytest.raises(LiebherrNotFoundError):
+            async for _ in client.stream_controls_forever(DEVICE_ID):
+                pass
+
+        assert len(calls) == 1
+        assert not sleeps
+
+    async def test_connect_and_disconnect_callbacks_fire(
+        self,
+        client: LiebherrClient,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """on_connect fires on first event; on_disconnect on a drop."""
+        calls: list[str] = []
+
+        async def fake_stream(device_id: str) -> Any:
+            calls.append(device_id)
+            if len(calls) == 1:
+                yield ["a"]
+                raise LiebherrConnectionError("drop")
+            raise LiebherrAuthenticationError("stop")
+
+        async def fake_sleep(delay: float) -> None:
+            return None
+
+        monkeypatch.setattr(client, "stream_controls", fake_stream)
+        monkeypatch.setattr(asyncio, "sleep", fake_sleep)
+
+        events: list[str] = []
+        with pytest.raises(LiebherrAuthenticationError):
+            async for _ in client.stream_controls_forever(
+                DEVICE_ID,
+                on_connect=lambda: events.append("connect"),
+                on_disconnect=lambda: events.append("disconnect"),
+            ):
+                pass
+
+        assert events == ["connect", "disconnect"]
+
+    async def test_disconnect_callback_skipped_without_prior_connect(
+        self,
+        client: LiebherrClient,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """on_disconnect is not called if no event was ever received."""
+
+        async def fake_stream(device_id: str) -> Any:
+            raise LiebherrConnectionError("drop")
+            yield  # pragma: no cover - marks this as an async generator
+
+        recovered = {"count": 0}
+
+        async def fake_sleep(delay: float) -> None:
+            recovered["count"] += 1
+            if recovered["count"] >= 2:
+                raise LiebherrAuthenticationError("stop")
+
+        monkeypatch.setattr(client, "stream_controls", fake_stream)
+        monkeypatch.setattr(asyncio, "sleep", fake_sleep)
+
+        events: list[str] = []
+        with pytest.raises(LiebherrAuthenticationError):
+            async for _ in client.stream_controls_forever(
+                DEVICE_ID,
+                on_connect=lambda: events.append("connect"),
+                on_disconnect=lambda: events.append("disconnect"),
+            ):
+                pass
+
+        assert not events
+
+    async def test_raising_callback_does_not_break_stream(
+        self,
+        client: LiebherrClient,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """An exception from a callback is swallowed and logged."""
+        calls: list[str] = []
+
+        async def fake_stream(device_id: str) -> Any:
+            calls.append(device_id)
+            if len(calls) == 1:
+                yield ["a"]
+                raise LiebherrConnectionError("drop")
+            raise LiebherrAuthenticationError("stop")
+
+        async def fake_sleep(delay: float) -> None:
+            return None
+
+        def boom() -> None:
+            raise ValueError("callback boom")
+
+        monkeypatch.setattr(client, "stream_controls", fake_stream)
+        monkeypatch.setattr(asyncio, "sleep", fake_sleep)
+
+        received: list[Any] = []
+        with pytest.raises(LiebherrAuthenticationError):
+            async for controls in client.stream_controls_forever(
+                DEVICE_ID, on_connect=boom, on_disconnect=boom
+            ):
+                received.append(controls)
+
+        # Despite the callbacks raising, the event was still delivered and the
+        # loop continued until the non-recoverable error.
+        assert received == [["a"]]
+        assert len(calls) == 2

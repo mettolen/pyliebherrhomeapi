@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Realtime control updates via Server-Sent Events: `stream_controls()` opens the SSE endpoint and yields parsed control lists as the appliance pushes updates _(beta)_
+- `stream_controls_forever()` — auto-reconnecting wrapper around `stream_controls()` with exponential backoff and jitter, plus optional non-blocking `on_connect` / `on_disconnect` callbacks for availability tracking (e.g. in a Home Assistant integration)
+- `SSE_RECONNECT_BASE_DELAY` and `SSE_RECONNECT_MAX_DELAY` constants controlling the reconnect backoff bounds
+
 ## [0.4.1] - 2026-03-22
 
 ### Added

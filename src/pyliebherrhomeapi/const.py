@@ -5,6 +5,10 @@ API_BASE_URL = "https://home-api.smartdevice.liebherr.com"
 API_VERSION = "v1"
 DEFAULT_TIMEOUT = 10
 
+# SSE reconnection backoff (seconds)
+SSE_RECONNECT_BASE_DELAY = 1.0
+SSE_RECONNECT_MAX_DELAY = 60.0
+
 # Control names
 CONTROL_TEMPERATURE = "temperature"
 CONTROL_SUPER_FROST = "superfrost"

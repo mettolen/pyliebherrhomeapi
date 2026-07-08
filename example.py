@@ -1,7 +1,10 @@
 """Example usage of pyliebherrhomeapi."""
 
 import asyncio
+import logging
 import os
+
+import aiohttp
 
 from pyliebherrhomeapi import (
     AutoDoorControl,
@@ -12,6 +15,53 @@ from pyliebherrhomeapi import (
     TemperatureControl,
     ToggleControl,
 )
+from pyliebherrhomeapi.const import API_BASE_URL, API_VERSION
+
+
+async def dump_raw_sse(api_key: str, device_id: str, *, timeout: float = 60) -> None:
+    """Open the SSE endpoint directly and log raw headers and content.
+
+    This bypasses the parsed ``stream_controls()`` helper so you can inspect
+    the exact response status, response headers, and raw event bytes the
+    server sends. Useful when debugging connection or parsing issues.
+
+    Args:
+        api_key: API key for authentication.
+        device_id: The device ID (serial number) to subscribe to.
+        timeout: How long (seconds) to keep reading the raw stream.
+
+    """
+    url = f"{API_BASE_URL}/{API_VERSION}/sse/devices/{device_id}/controls"
+    headers = {
+        "api-key": api_key,
+        "Accept": "text/event-stream",
+        "Cache-Control": "no-cache",
+    }
+    print(f"\n[RAW SSE] GET {url}")
+    print("[RAW SSE] Request headers:")
+    for key, value in headers.items():
+        # Redact the API key so it does not leak into logs.
+        shown = "***" if key.lower() == "api-key" else value
+        print(f"    {key}: {shown}")
+
+    stream_timeout = aiohttp.ClientTimeout(total=None, sock_read=None, sock_connect=10)
+    async with (
+        aiohttp.ClientSession() as session,
+        session.get(url, headers=headers, timeout=stream_timeout) as response,
+    ):
+        print(f"[RAW SSE] Status: {response.status} {response.reason}")
+        print("[RAW SSE] Response headers:")
+        for key, value in response.headers.items():
+            print(f"    {key}: {value}")
+
+        print("[RAW SSE] Raw stream content (repr per line):")
+        try:
+            async with asyncio.timeout(timeout):
+                async for raw_line in response.content:
+                    decoded = raw_line.decode("utf-8", errors="replace")
+                    print(f"    {decoded!r}")
+        except TimeoutError:
+            print("[RAW SSE] Raw stream window elapsed.")
 
 
 async def main() -> None:
@@ -122,6 +172,46 @@ async def main() -> None:
         #         print(f"{device.nickname}: {len(state.controls)} controls")
         #     await asyncio.sleep(30)  # Wait 30 seconds (recommended interval)
 
+        # Realtime updates via Server-Sent Events.
+        #
+        # This server closes the SSE connection after delivering a snapshot
+        # (observed: one ``event:device-update`` then EOF after ~15s), so a
+        # single stream_controls() call yields one event and then ends. Use
+        # stream_controls_forever(), which transparently reconnects with
+        # backoff so you keep receiving updates. Each event contains the full
+        # set of controls for this server; if a server sends deltas instead,
+        # merge each update into your cached state rather than replacing it.
+        #
+        # The example below subscribes to the first device for up to 600
+        # seconds, printing each update as it arrives. Use asyncio.timeout()
+        # or break out of the loop based on your own condition to stop.
+        #
+        if devices:
+            target = devices[0]
+
+            # Raw SSE diagnostics: print the exact response status, headers,
+            # and raw stream bytes before consuming the parsed stream. Handy
+            # when the parsed stream misbehaves and you need to see what the
+            # server actually sent.
+            print(f"\n[RAW SSE] Inspecting raw stream for {target.nickname}...")
+            await dump_raw_sse(api_key, target.device_id, timeout=30)
+
+            print(f"\nSubscribing to realtime updates for {target.nickname}...")
+            try:
+                async with asyncio.timeout(600):
+                    async for controls in client.stream_controls_forever(
+                        target.device_id
+                    ):
+                        print(f"  Update: {len(controls)} control(s)")
+                        for control in controls:
+                            print(f"    - {control.name}: {control!r}")
+            except TimeoutError:
+                print("  Stream window elapsed.")
+
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.DEBUG,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
     asyncio.run(main())
