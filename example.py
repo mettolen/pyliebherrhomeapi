@@ -194,7 +194,7 @@ async def main() -> None:
             # when the parsed stream misbehaves and you need to see what the
             # server actually sent.
             print(f"\n[RAW SSE] Inspecting raw stream for {target.nickname}...")
-            await dump_raw_sse(api_key, target.device_id, timeout=30)
+            await dump_raw_sse(api_key, target.device_id, timeout=600)
 
             print(f"\nSubscribing to realtime updates for {target.nickname}...")
             try:

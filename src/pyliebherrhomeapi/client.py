@@ -702,6 +702,13 @@ class LiebherrClient:
         payload cannot be parsed are skipped with a warning so a single bad
         event does not terminate the stream.
 
+        The server keeps the connection open by periodically sending bare
+        empty lines (roughly every 30 seconds) instead of SSE ``:`` comments.
+        These are undocumented but observed in production traffic. Bare
+        empty lines are treated as keep-alive per the SSE spec and do not
+        terminate the stream; the connection is only considered closed when
+        the underlying HTTP response ends.
+
         Args:
             device_id: The device ID (serial number).
 

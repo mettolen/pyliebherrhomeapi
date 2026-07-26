@@ -728,6 +728,50 @@ class TestStreamControls:
         assert len(received) == 1
         assert received[0][0].name == "nightmode"
 
+    async def test_bare_newline_keepalives_are_ignored(
+        self, client: LiebherrClient, mock_session: MagicMock
+    ) -> None:
+        """Bare ``\\n`` lines between events are treated as keep-alive.
+
+        The Liebherr Home API keeps the SSE connection open by periodically
+        sending bare empty lines (roughly every 30 seconds) rather than SSE
+        comments. Reproduces the exact wire pattern captured against the
+        production server: an ``event:``/``data:`` pair, the standard blank
+        line terminator, then several bare ``\\n`` keep-alive lines, followed
+        by further events.
+        """
+        payload_one = (
+            '[{"type":"TemperatureControl","name":"temperature",'
+            '"zoneId":0,"zonePosition":"top","value":4,"target":4,'
+            '"min":3,"max":9,"unit":"\u00b0C",'
+            '"setTemperatureSteps":[],"setTemperatureStepsEnabled":false}]'
+        )
+        payload_two = (
+            '[{"type":"ToggleControl","name":"supercool",'
+            '"zoneId":0,"zonePosition":"top","value":false}]'
+        )
+        lines = [
+            b"event:device-update\n",
+            f"data:{payload_one}\n".encode(),
+            b"\n",
+            b"\n",
+            b"\n",
+            b"\n",
+            b"event:device-update\n",
+            f"data:{payload_two}\n".encode(),
+            b"\n",
+            b"\n",
+            b"\n",
+            b"\n",
+        ]
+        _set_sse_response(mock_session, _make_sse_response(lines))
+
+        received = [c async for c in client.stream_controls(DEVICE_ID)]
+
+        assert len(received) == 2
+        assert received[0][0].name == "temperature"
+        assert received[1][0].name == "supercool"
+
     async def test_malformed_json_is_skipped(
         self, client: LiebherrClient, mock_session: MagicMock
     ) -> None:
