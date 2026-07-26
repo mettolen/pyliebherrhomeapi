@@ -5,13 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.5.0] - 2026-07-26
 
 ### Added
 
 - Realtime control updates via Server-Sent Events: `stream_controls()` opens the SSE endpoint and yields parsed control lists as the appliance pushes updates _(beta)_
 - `stream_controls_forever()` — auto-reconnecting wrapper around `stream_controls()` with exponential backoff and jitter, plus optional non-blocking `on_connect` / `on_disconnect` callbacks for availability tracking (e.g. in a Home Assistant integration)
 - `SSE_RECONNECT_BASE_DELAY` and `SSE_RECONNECT_MAX_DELAY` constants controlling the reconnect backoff bounds
+- Bare empty lines on the SSE stream (used by the Liebherr server as ~30s keep-alive) are now recognized and no longer terminate the stream
+- `zone_position` field on `HydroBreezeControl` and `BioFreshPlusControl` models, populated from the API's `zonePosition` payload
+
+### Changed
+
+- Bumped project development status from Alpha to Beta
+- Bumped `codecov/codecov-action` from 5 to 7 (CI only)
+- Bumped `actions/checkout` from 6 to 7 (CI only)
 
 ## [0.4.1] - 2026-03-22
 
