@@ -18,7 +18,7 @@
   ],
   "tags": [
     {
-      "name": "Get devices"
+      "name": "Get Devices"
     },
     {
       "name": "Manage Controls"
@@ -888,6 +888,7 @@
     "/v1/sse/devices/{deviceId}/controls": {
       "get": {
         "tags": ["Manage Controls v1 SSE"],
+        "summary": "Subscribe to realtime device controls (SSE stream)",
         "operationId": "getRealtimeControls",
         "parameters": [
           {
@@ -901,13 +902,13 @@
         ],
         "responses": {
           "200": {
-            "description": "OK",
+            "description": "SSE stream where each event's data carries the current device controls",
             "content": {
               "text/event-stream": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/ServerSentEventListDeviceControl"
+                    "$ref": "#/components/schemas/DeviceControl"
                   }
                 }
               }
@@ -986,33 +987,11 @@
           "200": {
             "description": "OK",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "oneOf": [
-                      {
-                        "$ref": "#/components/schemas/AutoDoor"
-                      },
-                      {
-                        "$ref": "#/components/schemas/BioFreshPlus"
-                      },
-                      {
-                        "$ref": "#/components/schemas/HydroBreeze"
-                      },
-                      {
-                        "$ref": "#/components/schemas/IceMaker"
-                      },
-                      {
-                        "$ref": "#/components/schemas/PresentationLight"
-                      },
-                      {
-                        "$ref": "#/components/schemas/Temperature"
-                      },
-                      {
-                        "$ref": "#/components/schemas/Toggle"
-                      }
-                    ]
+                    "$ref": "#/components/schemas/DeviceControl"
                   }
                 }
               }
@@ -1069,33 +1048,11 @@
           "200": {
             "description": "OK",
             "content": {
-              "*/*": {
+              "application/json": {
                 "schema": {
                   "type": "array",
                   "items": {
-                    "oneOf": [
-                      {
-                        "$ref": "#/components/schemas/AutoDoor"
-                      },
-                      {
-                        "$ref": "#/components/schemas/BioFreshPlus"
-                      },
-                      {
-                        "$ref": "#/components/schemas/HydroBreeze"
-                      },
-                      {
-                        "$ref": "#/components/schemas/IceMaker"
-                      },
-                      {
-                        "$ref": "#/components/schemas/PresentationLight"
-                      },
-                      {
-                        "$ref": "#/components/schemas/Temperature"
-                      },
-                      {
-                        "$ref": "#/components/schemas/Toggle"
-                      }
-                    ]
+                    "$ref": "#/components/schemas/DeviceControl"
                   }
                 }
               }
@@ -1322,41 +1279,6 @@
         },
         "required": ["bioFreshPlusMode", "zoneId"]
       },
-      "ServerSentEventListDeviceControl": {
-        "type": "object"
-      },
-      "Device": {
-        "type": "object",
-        "description": "A filtered representation of a device",
-        "properties": {
-          "deviceId": {
-            "type": "string",
-            "description": "The device id or serial number of the device",
-            "example": "34.916.716.7"
-          },
-          "nickname": {
-            "type": "string",
-            "description": "The user given nickname of the device",
-            "example": "kitchen fridge"
-          },
-          "deviceType": {
-            "type": "string",
-            "description": "Type of the device",
-            "enum": ["FRIDGE", "FREEZER", "COMBI", "WINE"],
-            "example": "Fridge"
-          },
-          "imageUrl": {
-            "type": "string",
-            "description": "A URL pointing to an image of the device",
-            "example": "https://inthaudigital.blob.core.windows.net:443/lipim/productimages/586214.png"
-          },
-          "deviceName": {
-            "type": "string",
-            "description": "The name of the device",
-            "example": "ICBN 3324-21A 001"
-          }
-        }
-      },
       "AutoDoor": {
         "allOf": [
           {
@@ -1462,9 +1384,42 @@
       },
       "DeviceControl": {
         "type": "object",
+        "description": "Base type for device controls. The concrete shape is determined by the 'type' discriminator.",
         "discriminator": {
-          "propertyName": "type"
+          "propertyName": "type",
+          "mapping": {
+            "TemperatureControl": "#/components/schemas/Temperature",
+            "ToggleControl": "#/components/schemas/Toggle",
+            "IceMakerControl": "#/components/schemas/IceMaker",
+            "AutoDoorControl": "#/components/schemas/AutoDoor",
+            "BioFreshPlusControl": "#/components/schemas/BioFreshPlus",
+            "HydroBreezeControl": "#/components/schemas/HydroBreeze",
+            "PresentationLightControl": "#/components/schemas/PresentationLight"
+          }
         },
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/Temperature"
+          },
+          {
+            "$ref": "#/components/schemas/Toggle"
+          },
+          {
+            "$ref": "#/components/schemas/IceMaker"
+          },
+          {
+            "$ref": "#/components/schemas/AutoDoor"
+          },
+          {
+            "$ref": "#/components/schemas/BioFreshPlus"
+          },
+          {
+            "$ref": "#/components/schemas/HydroBreeze"
+          },
+          {
+            "$ref": "#/components/schemas/PresentationLight"
+          }
+        ],
         "properties": {
           "type": {
             "type": "string"
@@ -1648,6 +1603,20 @@
                 "description": "The temperature unit the user selected on the device",
                 "enum": ["°C", "°F"],
                 "example": "°C"
+              },
+              "setTemperatureSteps": {
+                "type": "array",
+                "description": "Holds the allowed temperature values for appliances with set temperature steps enabled",
+                "example": [2, 4, 6, 8],
+                "items": {
+                  "type": "integer",
+                  "format": "int32"
+                }
+              },
+              "setTemperatureStepsEnabled": {
+                "type": "boolean",
+                "description": "Whether or not the set temperature steps is enabled",
+                "example": true
               }
             }
           }
@@ -1691,6 +1660,38 @@
           }
         ],
         "description": "A toggle tile for on/off functionality like SuperCool"
+      },
+      "Device": {
+        "type": "object",
+        "description": "A filtered representation of a device",
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "description": "The device id or serial number of the device",
+            "example": "34.916.716.7"
+          },
+          "nickname": {
+            "type": "string",
+            "description": "The user given nickname of the device",
+            "example": "kitchen fridge"
+          },
+          "deviceType": {
+            "type": "string",
+            "description": "Type of the device",
+            "enum": ["FRIDGE", "FREEZER", "COMBI", "WINE"],
+            "example": "Fridge"
+          },
+          "imageUrl": {
+            "type": "string",
+            "description": "A URL pointing to an image of the device",
+            "example": "https://inthaudigital.blob.core.windows.net:443/lipim/productimages/586214.png"
+          },
+          "deviceName": {
+            "type": "string",
+            "description": "The name of the device",
+            "example": "ICBN 3324-21A 001"
+          }
+        }
       }
     },
     "securitySchemes": {

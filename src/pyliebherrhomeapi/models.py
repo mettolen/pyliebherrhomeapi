@@ -150,6 +150,8 @@ class TemperatureControl:
     min: int | None = None
     max: int | None = None
     unit: TemperatureUnit | str | None = None
+    set_temperature_steps: list[int] = field(default_factory=list)
+    set_temperature_steps_enabled: bool | None = None
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> TemperatureControl:
@@ -164,6 +166,8 @@ class TemperatureControl:
             min=data.get("min"),
             max=data.get("max"),
             unit=_coerce_enum(TemperatureUnit, data.get("unit")),
+            set_temperature_steps=list(data.get("setTemperatureSteps") or []),
+            set_temperature_steps_enabled=data.get("setTemperatureStepsEnabled"),
         )
 
     def validate_temperature(self, temp: int) -> bool:
@@ -173,9 +177,13 @@ class TemperatureControl:
             temp: Temperature value to validate.
 
         Returns:
-            True if temperature is within min/max range, False otherwise.
+            True if temperature is within the allowed range, False otherwise.
+            When set temperature steps are enabled, the value must be one of
+            the allowed steps.
 
         """
+        if self.set_temperature_steps_enabled and self.set_temperature_steps:
+            return temp in self.set_temperature_steps
         if self.min is not None and temp < self.min:
             return False
         if self.max is not None and temp > self.max:

@@ -117,6 +117,8 @@ class TestTemperatureControl:
             "min": 2,
             "max": 8,
             "unit": "°C",
+            "setTemperatureSteps": [2, 4, 6, 8],
+            "setTemperatureStepsEnabled": True,
         }
         control = TemperatureControl.from_dict(data)
         assert control.name == "temperature"
@@ -128,6 +130,8 @@ class TestTemperatureControl:
         assert control.min == 2
         assert control.max == 8
         assert control.unit == TemperatureUnit.CELSIUS
+        assert control.set_temperature_steps == [2, 4, 6, 8]
+        assert control.set_temperature_steps_enabled is True
 
     def test_temperature_control_from_dict_minimal(self) -> None:
         """Test creating TemperatureControl from dict with minimal data."""
@@ -137,6 +141,8 @@ class TestTemperatureControl:
         assert control.zone_id == 0
         assert control.value is None
         assert control.target is None
+        assert control.set_temperature_steps == []
+        assert control.set_temperature_steps_enabled is None
 
     def test_temperature_control_unknown_zone_position(self) -> None:
         """Unknown zone positions are preserved as raw strings."""
@@ -196,6 +202,46 @@ class TestTemperatureControl:
             max=max_temp,
         )
         assert control.validate_temperature(test_value) is expected
+
+    @pytest.mark.parametrize(
+        ("test_value", "expected"),
+        [
+            (2, True),
+            (4, True),
+            (8, True),
+            (3, False),
+            (5, False),
+            (10, False),
+        ],
+    )
+    def test_validate_temperature_with_steps(
+        self, test_value: int, expected: bool
+    ) -> None:
+        """Enabled temperature steps restrict valid values to the allowed set."""
+        control = TemperatureControl(
+            name="temperature",
+            type="TemperatureControl",
+            zone_id=0,
+            min=2,
+            max=8,
+            set_temperature_steps=[2, 4, 6, 8],
+            set_temperature_steps_enabled=True,
+        )
+        assert control.validate_temperature(test_value) is expected
+
+    def test_validate_temperature_steps_disabled_uses_range(self) -> None:
+        """Disabled temperature steps fall back to min/max range checks."""
+        control = TemperatureControl(
+            name="temperature",
+            type="TemperatureControl",
+            zone_id=0,
+            min=2,
+            max=8,
+            set_temperature_steps=[2, 4, 6, 8],
+            set_temperature_steps_enabled=False,
+        )
+        assert control.validate_temperature(3) is True
+        assert control.validate_temperature(9) is False
 
 
 class TestToggleControl:

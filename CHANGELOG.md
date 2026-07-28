@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-07-29
+
+### Added
+
+- `set_temperature_steps` and `set_temperature_steps_enabled` fields on `TemperatureControl`, populated from the API's `setTemperatureSteps` / `setTemperatureStepsEnabled` payload for appliances with discrete temperature steps
+- `TemperatureControl.validate_temperature()` now restricts valid values to the allowed steps when set temperature steps are enabled, falling back to the min/max range otherwise
+
 ## [0.5.0] - 2026-07-26
 
 ### Added
