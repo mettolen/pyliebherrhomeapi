@@ -108,15 +108,13 @@ if __name__ == "__main__":
 - Zone controls (like temperature, SuperFrost, SuperCool) always require a `zone_id`
 - Base controls (like Party Mode, Night Mode) apply to the whole device and don't need a zone
 
-### Polling Recommendations
+### Polling and Device Refresh
 
-⚠️ **Beta Version Notice**: The REST endpoints do not push updates, so they need to be polled regularly. For realtime updates without polling, see the [Realtime Updates (SSE)](#realtime-updates-sse-beta) section below.
+The REST endpoints do not push updates. Control updates can be received through [Realtime Updates (SSE)](#realtime-updates-sse-beta), but device list and metadata changes still require an explicit REST request.
 
-**Recommended polling intervals:**
-
-- **Controls**: Poll every 30 seconds using `/v1/devices/{deviceId}/controls` to get all states in one call
-- **Device list**: Poll manually only when appliances are added/removed or nicknames change
-- **Rate limits**: Be mindful of API call limits. Avoid too many calls at once as there are restrictions for security and performance
+- **Controls**: Prefer SSE for realtime updates. If polling is required, use `/v1/devices/{deviceId}/controls` to get all control states in one call
+- **Device list**: Call `get_devices()` (`GET /v1/devices`) again to discover added or removed appliances and appliance nickname changes. These changes are not included in SSE events
+- **Rate limits**: Avoid excessive polling. The API restricts the number of calls for security and performance reasons
 
 ### Control Types
 
@@ -276,42 +274,44 @@ zone_temp = await client.get_control(
 )
 ```
 
-### Efficient Polling Pattern
+### Polling Fallback Pattern
 
 ```python
 import asyncio
 from pyliebherrhomeapi import LiebherrClient
 
-async def poll_device_state(client: LiebherrClient, device_id: str):
-    """Poll device state every 30 seconds (recommended interval)."""
+async def poll_controls(
+    client: LiebherrClient, device_id: str, interval: float
+) -> None:
+    """Poll all device controls at a caller-selected interval."""
     while True:
         try:
             # Get all controls in a single API call
-            device_state = await client.get_device_state(device_id)
+            controls = await client.get_controls(device_id)
 
             # Process the controls
-            for control in device_state.controls:
+            for control in controls:
                 print(f"{control.name}: {control}")
 
-            # Wait 30 seconds before next poll (recommended by Liebherr)
-            await asyncio.sleep(30)
+            await asyncio.sleep(interval)
 
         except Exception as e:
             print(f"Error polling device: {e}")
-            await asyncio.sleep(30)
+            await asyncio.sleep(interval)
 
 async def main():
     async with LiebherrClient(api_key="your-api-key") as client:
         devices = await client.get_devices()
         if devices:
-            await poll_device_state(client, devices[0].device_id)
+            # This is an example interval, not an API recommendation.
+            await poll_controls(client, devices[0].device_id, interval=60)
 ```
 
 ### Realtime Updates (SSE) _(beta)_
 
-⚠️ **Beta**: The SSE endpoint is in beta on the Liebherr side and not yet part of the official OpenAPI spec. The payload format is based on observed traffic and may change.
+⚠️ **Beta**: SSE support in this library is beta. The endpoint and its control-list payload are documented in the official HomeAPI documentation and OpenAPI specification.
 
-The client subscribes to `/v1/sse/devices/{deviceId}/controls` and yields a list of parsed controls on each update. Based on observed traffic, the server sends a snapshot of all controls then closes the connection, so you must reconnect to keep receiving updates. Malformed events are logged and skipped.
+The client subscribes to `/v1/sse/devices/{deviceId}/controls` and yields a list of parsed controls on each update. The server keeps the connection open and sends an empty keep-alive about every 30 seconds. SSE events only contain appliance control updates; they do not report added or removed appliances or appliance nickname changes. Call `get_devices()` (`GET /v1/devices`) explicitly to refresh that information. Malformed events are logged and skipped.
 
 #### Recommended: `stream_controls_forever()`
 
@@ -462,7 +462,7 @@ For detailed API documentation, visit:
 
 ## Implementation Notes
 
-This client library is generated based on the official `openapi.json` specification downloaded from the Liebherr Developer Portal, which reflects the latest API state. When Liebherr updates their API and releases a new version of the OpenAPI specification, this client library will be updated accordingly to maintain compatibility and support new features.
+This handwritten client is implemented against the checked-in official `openapi.json` specification and the HomeAPI documentation from the Liebherr Developer Portal.
 
 ## License
 

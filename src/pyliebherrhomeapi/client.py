@@ -12,7 +12,7 @@ Terminology (from Liebherr SmartDevice HomeAPI documentation):
 Important Notes:
 - Only appliances connected via SmartDevice app are accessible
 - Zone controls always require a zone_id, even if device has only one zone
-- Recommended polling interval: 30 seconds for controls
+- SSE publishes control updates only; device list changes require a REST request
 - API key is obtained from SmartDevice app (Settings -> Beta features -> HomeAPI)
 - API key can only be copied once from the app!
 """
@@ -311,6 +311,10 @@ class LiebherrClient:
 
     async def get_devices(self) -> list[Device]:
         """Get all connected devices.
+
+        Call this method again to discover added or removed appliances and
+        appliance nickname changes. The Server-Sent Events endpoints only
+        publish control updates and do not publish device list changes.
 
         Returns:
             List of Device objects.
@@ -691,23 +695,21 @@ class LiebherrClient:
         stays open until the consumer stops iterating, an error occurs, or the
         server closes the stream.
 
-        The Liebherr OpenAPI spec does not currently document the SSE event
-        payload schema. Based on observed traffic, the ``data:`` field of each
-        event contains a JSON list of control objects matching the regular
-        ``/controls`` response. The first event after connecting carries the
-        full set of controls; subsequent events contain only the controls
-        whose state has changed (deltas), so consumers should merge each
-        update into their cached state rather than replacing it. A single
-        control object (rather than a list) is also accepted. Events whose
-        payload cannot be parsed are skipped with a warning so a single bad
-        event does not terminate the stream.
+        This stream only publishes appliance control updates. Call
+        :meth:`get_devices` explicitly to discover added or removed appliances
+        and appliance nickname changes.
 
-        The server keeps the connection open by periodically sending bare
-        empty lines (roughly every 30 seconds) instead of SSE ``:`` comments.
-        These are undocumented but observed in production traffic. Bare
-        empty lines are treated as keep-alive per the SSE spec and do not
-        terminate the stream; the connection is only considered closed when
-        the underlying HTTP response ends.
+        The Liebherr OpenAPI spec defines each event payload as a JSON list of
+        control objects matching the regular ``/controls`` response. Consumers
+        maintaining cached state should merge the controls in each event by
+        name and zone. A single control object (rather than a list) is also
+        accepted defensively. Events whose payload cannot be parsed are skipped
+        with a warning so a single bad event does not terminate the stream.
+
+        The server keeps the connection open by sending an empty keep-alive
+        roughly every 30 seconds. These arrive as bare empty lines rather than
+        SSE ``:`` comments and do not terminate the stream; the connection is
+        only considered closed when the underlying HTTP response ends.
 
         Args:
             device_id: The device ID (serial number).
@@ -833,6 +835,10 @@ class LiebherrClient:
         (connection drops, timeouts, and 5xx server errors) and clean stream
         closures trigger a reconnect after an exponential backoff delay with
         jitter. The backoff resets after any successfully received event.
+
+        This stream only publishes appliance control updates. Call
+        :meth:`get_devices` explicitly to discover added or removed appliances
+        and appliance nickname changes.
 
         Non-recoverable errors are re-raised without retrying, since retrying
         cannot succeed without caller intervention:

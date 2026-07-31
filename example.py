@@ -99,8 +99,7 @@ async def main() -> None:
             print(f"  Type: {device.device_type}")
             print(f"  Model: {device.device_name}")
 
-            # Get all controls for this device
-            # Recommended: Use this single call for polling (every ~30 seconds)
+            # Get all controls for this device in one request
             print("\n  Controls:")
             controls = await client.get_controls(device.device_id)
 
@@ -163,24 +162,20 @@ async def main() -> None:
 
             print(f"{'=' * 60}\n")
 
-        # Polling example (commented out)
-        # print("\nRecommended polling pattern:")
-        # print("Poll every 30 seconds using get_device_state() for efficiency")
+        # Polling fallback (commented out). Choose an interval suitable for
+        # your application and avoid excessive API calls.
         # while True:
         #     for device in devices:
-        #         state = await client.get_device_state(device.device_id)
-        #         print(f"{device.nickname}: {len(state.controls)} controls")
-        #     await asyncio.sleep(30)  # Wait 30 seconds (recommended interval)
+        #         controls = await client.get_controls(device.device_id)
+        #         print(f"{device.nickname}: {len(controls)} controls")
+        #     await asyncio.sleep(60)
 
         # Realtime updates via Server-Sent Events.
         #
-        # This server closes the SSE connection after delivering a snapshot
-        # (observed: one ``event:device-update`` then EOF after ~15s), so a
-        # single stream_controls() call yields one event and then ends. Use
-        # stream_controls_forever(), which transparently reconnects with
-        # backoff so you keep receiving updates. Each event contains the full
-        # set of controls for this server; if a server sends deltas instead,
-        # merge each update into your cached state rather than replacing it.
+        # The server keeps the connection open and sends empty keep-alive
+        # about every 30 seconds. stream_controls_forever() reconnects with
+        # backoff if the connection still drops or the server closes it.
+        # Merge controls from each event into cached state by name and zone.
         #
         # The example below subscribes to the first device for up to 600
         # seconds, printing each update as it arrives. Use asyncio.timeout()
