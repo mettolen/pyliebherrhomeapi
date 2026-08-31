@@ -479,6 +479,7 @@ class TestErrorHandling:
         ("status", "response_data", "exception_class"),
         [
             (401, {"message": "Unauthorized"}, LiebherrAuthenticationError),
+            (403, {"message": "Forbidden"}, LiebherrAuthenticationError),
             (400, {"message": "Invalid data"}, LiebherrBadRequestError),
             (404, {"message": "Device not found"}, LiebherrNotFoundError),
             (412, {"message": "Device not onboarded"}, LiebherrPreconditionFailedError),
@@ -517,6 +518,84 @@ class TestErrorHandling:
 
         with pytest.raises(LiebherrConnectionError):
             await client.get_devices()
+
+    @pytest.mark.parametrize("status", [401, 403])
+    async def test_persistent_auth_error_is_raised_after_retries(
+        self,
+        mock_session: MagicMock,
+        mock_response: MagicMock,
+        status: int,
+    ) -> None:
+        """A persistent 401/403 remains an authentication failure."""
+        mock_response.status = status
+        mock_response.json = AsyncMock(return_value={"message": "auth failed"})
+        client = LiebherrClient(api_key=API_KEY, session=mock_session)
+
+        with (
+            patch("pyliebherrhomeapi.client.asyncio.sleep", new_callable=AsyncMock),
+            pytest.raises(LiebherrAuthenticationError),
+        ):
+            await client.get_devices()
+
+        assert mock_session.request.call_count == 3
+
+    @pytest.mark.parametrize(
+        "first_failure",
+        [503, TimeoutError("timed out"), aiohttp.ClientConnectionError("dns error")],
+        ids=["service-unavailable", "timeout", "dns-error"],
+    )
+    async def test_transient_failure_recovers_with_same_api_key(
+        self,
+        mock_session: MagicMock,
+        first_failure: int | BaseException,
+    ) -> None:
+        """A transient backend/network failure is retried and recovers."""
+        success = MagicMock()
+        success.__aenter__ = AsyncMock(return_value=success)
+        success.__aexit__ = AsyncMock(return_value=None)
+        success.status = 200
+        success.json = AsyncMock(return_value=[])
+
+        if isinstance(first_failure, int):
+            failure = MagicMock()
+            failure.__aenter__ = AsyncMock(return_value=failure)
+            failure.__aexit__ = AsyncMock(return_value=None)
+            failure.status = first_failure
+            failure.json = AsyncMock(return_value={"message": "temporary"})
+            mock_session.request.side_effect = [failure, success]
+        else:
+            mock_session.request.side_effect = [first_failure, success]
+
+        client = LiebherrClient(api_key=API_KEY, session=mock_session)
+        with patch(
+            "pyliebherrhomeapi.client.asyncio.sleep", new_callable=AsyncMock
+        ) as sleep:
+            assert await client.get_devices() == []
+
+        sleep.assert_awaited_once()
+        assert mock_session.request.call_count == 2
+
+    async def test_transient_401_recovers_with_same_api_key(
+        self, mock_session: MagicMock
+    ) -> None:
+        """One spurious 401 does not force reauth when the same key recovers."""
+        unauthorized = MagicMock()
+        unauthorized.__aenter__ = AsyncMock(return_value=unauthorized)
+        unauthorized.__aexit__ = AsyncMock(return_value=None)
+        unauthorized.status = 401
+        unauthorized.json = AsyncMock(return_value={"message": "Unauthorized"})
+        success = MagicMock()
+        success.__aenter__ = AsyncMock(return_value=success)
+        success.__aexit__ = AsyncMock(return_value=None)
+        success.status = 200
+        success.json = AsyncMock(return_value=[])
+        mock_session.request.side_effect = [unauthorized, success]
+        client = LiebherrClient(api_key=API_KEY, session=mock_session)
+
+        with patch("pyliebherrhomeapi.client.asyncio.sleep", new_callable=AsyncMock):
+            assert await client.get_devices() == []
+
+        assert mock_session.request.call_count == 2
 
     async def test_http_status_204(
         self, client: LiebherrClient, mock_response: MagicMock
