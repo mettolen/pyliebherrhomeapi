@@ -476,48 +476,70 @@ class TestErrorHandling:
     """Tests for error handling using parametrization."""
 
     @pytest.mark.parametrize(
-        ("status", "response_data", "exception_class"),
+        ("status", "response_data", "exception_class", "expected_attempts"),
         [
-            (401, {"message": "Unauthorized"}, LiebherrAuthenticationError),
-            (403, {"message": "Forbidden"}, LiebherrAuthenticationError),
-            (400, {"message": "Invalid data"}, LiebherrBadRequestError),
-            (404, {"message": "Device not found"}, LiebherrNotFoundError),
-            (412, {"message": "Device not onboarded"}, LiebherrPreconditionFailedError),
-            (422, {"message": "Not supported"}, LiebherrUnsupportedError),
-            (500, {"message": "Internal error"}, LiebherrServerError),
-            (503, {"message": "Service unavailable"}, LiebherrConnectionError),
+            (401, {"message": "Unauthorized"}, LiebherrAuthenticationError, 3),
+            (403, {"message": "Forbidden"}, LiebherrAuthenticationError, 3),
+            (400, {"message": "Invalid data"}, LiebherrBadRequestError, 1),
+            (404, {"message": "Device not found"}, LiebherrNotFoundError, 1),
+            (
+                412,
+                {"message": "Device not onboarded"},
+                LiebherrPreconditionFailedError,
+                1,
+            ),
+            (422, {"message": "Not supported"}, LiebherrUnsupportedError, 1),
+            (500, {"message": "Internal error"}, LiebherrServerError, 3),
+            (503, {"message": "Service unavailable"}, LiebherrServerError, 3),
         ],
     )
     async def test_http_errors(
         self,
         client: LiebherrClient,
+        mock_session: MagicMock,
         mock_response: MagicMock,
         status: int,
         response_data: dict[str, str],
         exception_class: type[Exception],
+        expected_attempts: int,
     ) -> None:
         """Test HTTP error handling."""
         mock_response.status = status
         mock_response.json = AsyncMock(return_value=response_data)
 
-        with pytest.raises(exception_class):
+        with (
+            patch("pyliebherrhomeapi.client.asyncio.sleep", new_callable=AsyncMock),
+            pytest.raises(exception_class),
+        ):
             await client.get_devices()
+
+        assert mock_session.request.call_count == expected_attempts
 
     async def test_timeout_error(self, mock_session: MagicMock) -> None:
         """Test timeout error."""
         mock_session.request.side_effect = TimeoutError("Request timed out")
         client = LiebherrClient(api_key=API_KEY, session=mock_session)
 
-        with pytest.raises(LiebherrTimeoutError):
+        with (
+            patch("pyliebherrhomeapi.client.asyncio.sleep", new_callable=AsyncMock),
+            pytest.raises(LiebherrTimeoutError),
+        ):
             await client.get_devices()
+
+        assert mock_session.request.call_count == 3
 
     async def test_connection_error(self, mock_session: MagicMock) -> None:
         """Test connection error."""
         mock_session.request.side_effect = aiohttp.ClientError("Connection failed")
         client = LiebherrClient(api_key=API_KEY, session=mock_session)
 
-        with pytest.raises(LiebherrConnectionError):
+        with (
+            patch("pyliebherrhomeapi.client.asyncio.sleep", new_callable=AsyncMock),
+            pytest.raises(LiebherrConnectionError),
+        ):
             await client.get_devices()
+
+        assert mock_session.request.call_count == 3
 
     @pytest.mark.parametrize("status", [401, 403])
     async def test_persistent_auth_error_is_raised_after_retries(
@@ -907,11 +929,12 @@ class TestStreamControls:
         assert len(received) == 1
         assert received[0] == []
 
-    async def test_unauthorized_status_raises(
-        self, client: LiebherrClient, mock_session: MagicMock
+    @pytest.mark.parametrize("status", [401, 403])
+    async def test_auth_status_raises(
+        self, client: LiebherrClient, mock_session: MagicMock, status: int
     ) -> None:
-        """HTTP 401 on the SSE handshake raises an auth error."""
-        _set_sse_response(mock_session, _make_sse_response([], status=401))
+        """HTTP 401/403 on the SSE handshake raises an auth error."""
+        _set_sse_response(mock_session, _make_sse_response([], status=status))
 
         with pytest.raises(LiebherrAuthenticationError):
             async for _ in client.stream_controls(DEVICE_ID):
@@ -1035,6 +1058,66 @@ class TestStreamReconnectDelay:
 class TestStreamControlsForever:
     """Tests for the auto-reconnecting stream wrapper."""
 
+    async def test_transient_auth_error_reconnects(
+        self,
+        client: LiebherrClient,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A single authentication error does not terminate the stream."""
+        calls: list[str] = []
+
+        async def fake_stream(device_id: str) -> Any:
+            calls.append(device_id)
+            if len(calls) == 1:
+                raise LiebherrAuthenticationError("transient")
+            yield ["a"]
+            raise LiebherrNotFoundError("stop")
+
+        sleeps: list[float] = []
+
+        async def fake_sleep(delay: float) -> None:
+            sleeps.append(delay)
+
+        monkeypatch.setattr(client, "stream_controls", fake_stream)
+        monkeypatch.setattr(asyncio, "sleep", fake_sleep)
+
+        received: list[Any] = []
+        with pytest.raises(LiebherrNotFoundError):
+            async for controls in client.stream_controls_forever(DEVICE_ID):
+                received.append(controls)
+
+        assert received == [["a"]]
+        assert len(calls) == 2
+        assert len(sleeps) == 1
+
+    async def test_persistent_auth_error_is_not_retried_forever(
+        self,
+        client: LiebherrClient,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Persistent authentication errors propagate after bounded retries."""
+        calls: list[str] = []
+
+        async def fake_stream(device_id: str) -> Any:
+            calls.append(device_id)
+            raise LiebherrAuthenticationError("invalid")
+            yield  # pragma: no cover - marks this as an async generator
+
+        sleeps: list[float] = []
+
+        async def fake_sleep(delay: float) -> None:
+            sleeps.append(delay)
+
+        monkeypatch.setattr(client, "stream_controls", fake_stream)
+        monkeypatch.setattr(asyncio, "sleep", fake_sleep)
+
+        with pytest.raises(LiebherrAuthenticationError):
+            async for _ in client.stream_controls_forever(DEVICE_ID):
+                pass
+
+        assert len(calls) == 3
+        assert len(sleeps) == 2
+
     async def test_reconnects_after_recoverable_error(
         self,
         client: LiebherrClient,
@@ -1049,7 +1132,7 @@ class TestStreamControlsForever:
                 yield ["a"]
                 yield ["b"]
                 raise LiebherrConnectionError("drop")
-            raise LiebherrAuthenticationError("stop")
+            raise LiebherrNotFoundError("stop")
 
         sleeps: list[float] = []
 
@@ -1060,7 +1143,7 @@ class TestStreamControlsForever:
         monkeypatch.setattr(asyncio, "sleep", fake_sleep)
 
         received: list[Any] = []
-        with pytest.raises(LiebherrAuthenticationError):
+        with pytest.raises(LiebherrNotFoundError):
             async for controls in client.stream_controls_forever(DEVICE_ID):
                 received.append(controls)
 
@@ -1083,7 +1166,7 @@ class TestStreamControlsForever:
                 raise LiebherrConnectionError("drop")
             if len(calls) == 2:
                 raise LiebherrConnectionError("drop again")
-            raise LiebherrAuthenticationError("stop")
+            raise LiebherrNotFoundError("stop")
 
         attempts: list[int] = []
 
@@ -1098,7 +1181,7 @@ class TestStreamControlsForever:
         monkeypatch.setattr(client, "_sse_reconnect_delay", spy_delay)
         monkeypatch.setattr(asyncio, "sleep", fake_sleep)
 
-        with pytest.raises(LiebherrAuthenticationError):
+        with pytest.raises(LiebherrNotFoundError):
             async for _ in client.stream_controls_forever(DEVICE_ID):
                 pass
 
@@ -1119,7 +1202,7 @@ class TestStreamControlsForever:
             if len(calls) == 1:
                 yield ["a"]
                 return
-            raise LiebherrAuthenticationError("stop")
+            raise LiebherrNotFoundError("stop")
 
         async def fake_sleep(delay: float) -> None:
             return None
@@ -1128,7 +1211,7 @@ class TestStreamControlsForever:
         monkeypatch.setattr(asyncio, "sleep", fake_sleep)
 
         received: list[Any] = []
-        with pytest.raises(LiebherrAuthenticationError):
+        with pytest.raises(LiebherrNotFoundError):
             async for controls in client.stream_controls_forever(DEVICE_ID):
                 received.append(controls)
 
@@ -1176,7 +1259,7 @@ class TestStreamControlsForever:
             if len(calls) == 1:
                 yield ["a"]
                 raise LiebherrConnectionError("drop")
-            raise LiebherrAuthenticationError("stop")
+            raise LiebherrNotFoundError("stop")
 
         async def fake_sleep(delay: float) -> None:
             return None
@@ -1185,7 +1268,7 @@ class TestStreamControlsForever:
         monkeypatch.setattr(asyncio, "sleep", fake_sleep)
 
         events: list[str] = []
-        with pytest.raises(LiebherrAuthenticationError):
+        with pytest.raises(LiebherrNotFoundError):
             async for _ in client.stream_controls_forever(
                 DEVICE_ID,
                 on_connect=lambda: events.append("connect"),
@@ -1211,13 +1294,13 @@ class TestStreamControlsForever:
         async def fake_sleep(delay: float) -> None:
             recovered["count"] += 1
             if recovered["count"] >= 2:
-                raise LiebherrAuthenticationError("stop")
+                raise LiebherrNotFoundError("stop")
 
         monkeypatch.setattr(client, "stream_controls", fake_stream)
         monkeypatch.setattr(asyncio, "sleep", fake_sleep)
 
         events: list[str] = []
-        with pytest.raises(LiebherrAuthenticationError):
+        with pytest.raises(LiebherrNotFoundError):
             async for _ in client.stream_controls_forever(
                 DEVICE_ID,
                 on_connect=lambda: events.append("connect"),
@@ -1240,7 +1323,7 @@ class TestStreamControlsForever:
             if len(calls) == 1:
                 yield ["a"]
                 raise LiebherrConnectionError("drop")
-            raise LiebherrAuthenticationError("stop")
+            raise LiebherrNotFoundError("stop")
 
         async def fake_sleep(delay: float) -> None:
             return None
@@ -1252,7 +1335,7 @@ class TestStreamControlsForever:
         monkeypatch.setattr(asyncio, "sleep", fake_sleep)
 
         received: list[Any] = []
-        with pytest.raises(LiebherrAuthenticationError):
+        with pytest.raises(LiebherrNotFoundError):
             async for controls in client.stream_controls_forever(
                 DEVICE_ID, on_connect=boom, on_disconnect=boom
             ):

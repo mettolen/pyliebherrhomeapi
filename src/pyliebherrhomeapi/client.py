@@ -47,6 +47,7 @@ from .const import (
     DEFAULT_TIMEOUT,
     REST_MAX_ATTEMPTS,
     REST_RETRY_BASE_DELAY,
+    SSE_AUTH_MAX_ATTEMPTS,
     SSE_RECONNECT_BASE_DELAY,
     SSE_RECONNECT_MAX_DELAY,
 )
@@ -170,24 +171,25 @@ class LiebherrClient:
         again shortly afterwards. Repeated 401/403 responses still surface as
         :class:`LiebherrAuthenticationError` so callers can start reauth.
         """
-        for attempt in range(REST_MAX_ATTEMPTS):
+        attempt = 1
+        while True:
             try:
                 return await self._request_once(method, endpoint, json_data, params)
             except (LiebherrAuthenticationError, LiebherrConnectionError) as err:
-                if attempt == REST_MAX_ATTEMPTS - 1:
+                if attempt == REST_MAX_ATTEMPTS:
                     raise
-                delay = REST_RETRY_BASE_DELAY * 2**attempt
+                delay = REST_RETRY_BASE_DELAY * 2 ** (attempt - 1)
                 _LOGGER.warning(
                     "%s %s failed (%s); retrying in %.1fs (%d/%d)",
                     method,
                     endpoint,
                     type(err).__name__,
                     delay,
-                    attempt + 2,
+                    attempt + 1,
                     REST_MAX_ATTEMPTS,
                 )
                 await asyncio.sleep(delay)
-        raise AssertionError("unreachable")
+                attempt += 1
 
     async def _request_once(
         self,
@@ -256,7 +258,10 @@ class LiebherrClient:
                     return str(body) if body is not None else response.reason or ""
 
                 if response.status in (401, 403):
-                    _LOGGER.error("Authentication failed")
+                    _LOGGER.warning(
+                        "Authentication request failed with HTTP %d",
+                        response.status,
+                    )
                     raise LiebherrAuthenticationError("Authentication failed")
                 if response.status == 400:
                     msg = _extract_message()
@@ -827,7 +832,7 @@ class LiebherrClient:
         status = response.status
         if status == 200:
             return
-        if status == 401:
+        if status in (401, 403):
             raise LiebherrAuthenticationError("Authentication failed")
         if status == 404:
             raise LiebherrNotFoundError(f"Device {device_id} is not reachable")
@@ -871,10 +876,11 @@ class LiebherrClient:
         :meth:`get_devices` explicitly to discover added or removed appliances
         and appliance nickname changes.
 
-        Non-recoverable errors are re-raised without retrying, since retrying
-        cannot succeed without caller intervention:
+        Authentication errors are retried to tolerate transient 401/403
+        responses from the HomeAPI. Persistent authentication errors and other
+        non-recoverable errors are re-raised:
 
-        - :class:`LiebherrAuthenticationError` (bad API key)
+        - :class:`LiebherrAuthenticationError` (persistent authentication failure)
         - :class:`LiebherrNotFoundError` (device not reachable)
         - :class:`LiebherrPreconditionFailedError` (device not onboarded)
 
@@ -908,23 +914,35 @@ class LiebherrClient:
 
         """
         attempt = 0
+        auth_failures = 0
         connected = False
         while True:
             try:
                 async for controls in self.stream_controls(device_id):
                     attempt = 0
+                    auth_failures = 0
                     if not connected:
                         connected = True
                         self._run_stream_callback(on_connect, device_id, "on_connect")
                     yield controls
+            except LiebherrAuthenticationError:
+                auth_failures += 1
+                if auth_failures >= SSE_AUTH_MAX_ATTEMPTS:
+                    raise
+                delay = self._sse_reconnect_delay(attempt, base_delay, max_delay)
+                _LOGGER.warning(
+                    "SSE authentication for %s failed (%d/%d); reconnecting in %.1fs",
+                    device_id,
+                    auth_failures,
+                    SSE_AUTH_MAX_ATTEMPTS,
+                    delay,
+                )
             except (
                 LiebherrConnectionError,
                 LiebherrTimeoutError,
                 LiebherrServerError,
             ) as err:
-                # Recoverable: reconnect after a backoff delay.
-                # Non-recoverable errors (auth, not-found, precondition) are
-                # not caught here and propagate to the caller.
+                auth_failures = 0
                 delay = self._sse_reconnect_delay(attempt, base_delay, max_delay)
                 _LOGGER.debug(
                     "SSE stream for %s dropped (%s); reconnecting in %.1fs",
@@ -933,6 +951,7 @@ class LiebherrClient:
                     delay,
                 )
             else:
+                auth_failures = 0
                 delay = self._sse_reconnect_delay(attempt, base_delay, max_delay)
                 _LOGGER.debug(
                     "SSE stream for %s ended; reconnecting in %.1fs",

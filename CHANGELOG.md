@@ -9,8 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Retry transient REST authentication, server, timeout, and connection failures
-  with bounded exponential backoff.
+- Retry transient REST and SSE authentication failures, plus REST server,
+  timeout, and connection failures, with bounded exponential backoff.
 - Treat HTTP 403 as an authentication failure and classify timeout and server
   errors as connection errors for consistent caller recovery.
 
