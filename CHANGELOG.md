@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- Retry transient REST authentication, server, timeout, and connection failures
+  with bounded exponential backoff.
+- Treat HTTP 403 as an authentication failure and classify timeout and server
+  errors as connection errors for consistent caller recovery.
+
 ## [0.5.1] - 2026-07-29
 
 ### Added

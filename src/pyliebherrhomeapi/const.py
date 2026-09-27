@@ -4,6 +4,8 @@
 API_BASE_URL = "https://home-api.smartdevice.liebherr.com"
 API_VERSION = "v1"
 DEFAULT_TIMEOUT = 10
+REST_MAX_ATTEMPTS = 3
+REST_RETRY_BASE_DELAY = 0.5
 
 # SSE reconnection backoff (seconds)
 SSE_RECONNECT_BASE_DELAY = 1.0

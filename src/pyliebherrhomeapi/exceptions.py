@@ -9,7 +9,7 @@ class LiebherrConnectionError(LiebherrError):
     """Exception raised when connection to Liebherr API fails."""
 
 
-class LiebherrTimeoutError(LiebherrError):
+class LiebherrTimeoutError(LiebherrConnectionError):
     """Exception raised when request to Liebherr API times out."""
 
 
@@ -33,5 +33,5 @@ class LiebherrUnsupportedError(LiebherrError):
     """Exception raised when operation is not supported."""
 
 
-class LiebherrServerError(LiebherrError):
+class LiebherrServerError(LiebherrConnectionError):
     """Exception raised when server returns 500 error."""

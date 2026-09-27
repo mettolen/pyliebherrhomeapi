@@ -45,6 +45,8 @@ from .const import (
     CONTROL_SUPER_FROST,
     CONTROL_TEMPERATURE,
     DEFAULT_TIMEOUT,
+    REST_MAX_ATTEMPTS,
+    REST_RETRY_BASE_DELAY,
     SSE_RECONNECT_BASE_DELAY,
     SSE_RECONNECT_MAX_DELAY,
 )
@@ -161,6 +163,39 @@ class LiebherrClient:
         json_data: dict[str, Any] | None = None,
         params: dict[str, Any] | None = None,
     ) -> dict[str, Any] | list[Any] | None:
+        """Make an API request with bounded retries for transient failures.
+
+        Authentication failures are retried as well because the HomeAPI has
+        been observed to return a transient 401 while the same API key works
+        again shortly afterwards. Repeated 401/403 responses still surface as
+        :class:`LiebherrAuthenticationError` so callers can start reauth.
+        """
+        for attempt in range(REST_MAX_ATTEMPTS):
+            try:
+                return await self._request_once(method, endpoint, json_data, params)
+            except (LiebherrAuthenticationError, LiebherrConnectionError) as err:
+                if attempt == REST_MAX_ATTEMPTS - 1:
+                    raise
+                delay = REST_RETRY_BASE_DELAY * 2**attempt
+                _LOGGER.warning(
+                    "%s %s failed (%s); retrying in %.1fs (%d/%d)",
+                    method,
+                    endpoint,
+                    type(err).__name__,
+                    delay,
+                    attempt + 2,
+                    REST_MAX_ATTEMPTS,
+                )
+                await asyncio.sleep(delay)
+        raise AssertionError("unreachable")
+
+    async def _request_once(
+        self,
+        method: str,
+        endpoint: str,
+        json_data: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
+    ) -> dict[str, Any] | list[Any] | None:
         """Make an API request.
 
         Args:
@@ -220,7 +255,7 @@ class LiebherrClient:
                         return str(body.get("message", "Unknown error"))
                     return str(body) if body is not None else response.reason or ""
 
-                if response.status == 401:
+                if response.status in (401, 403):
                     _LOGGER.error("Authentication failed")
                     raise LiebherrAuthenticationError("Authentication failed")
                 if response.status == 400:
@@ -239,15 +274,11 @@ class LiebherrClient:
                     msg = _extract_message()
                     _LOGGER.warning("Unsupported operation: %s", msg)
                     raise LiebherrUnsupportedError(f"Operation not supported: {msg}")
-                if response.status == 500:
+                if 500 <= response.status < 600:
                     msg = _extract_message()
-                    _LOGGER.error("Server error: %s", msg)
-                    raise LiebherrServerError(f"Internal server error: {msg}")
-                if response.status == 503:
-                    msg = _extract_message()
-                    _LOGGER.error("Service unavailable: %s", msg)
-                    raise LiebherrConnectionError(
-                        f"Internal service not reachable: {msg}"
+                    _LOGGER.error("Server error %d: %s", response.status, msg)
+                    raise LiebherrServerError(
+                        f"Server error HTTP {response.status}: {msg}"
                     )
 
                 try:
