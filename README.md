@@ -25,7 +25,7 @@ This library is used by the [Liebherr](https://www.home-assistant.io/integration
 - 💧 **HydroBreeze and BioFreshPlus** mode management
 - 🚪 **Auto door** control for supported appliances
 - 📱 **Device management** - list and query all connected appliances
-- 📡 **Realtime updates via Server-Sent Events (SSE)** _(beta)_ - subscribe to live control state changes
+- 📡 **Realtime updates via Server-Sent Events (SSE)** - subscribe to live control state changes
 - 🛡️ **Type hints** for better IDE support and development experience
 - ✅ **Input validation** with proper error handling
 - 📊 **Comprehensive data models** for all control types
@@ -110,7 +110,7 @@ if __name__ == "__main__":
 
 ### Polling and Device Refresh
 
-The REST endpoints do not push updates. Control updates can be received through [Realtime Updates (SSE)](#realtime-updates-sse-beta), but device list and metadata changes still require an explicit REST request.
+The REST endpoints do not push updates. Control updates can be received through [Realtime Updates (SSE)](#realtime-updates-sse), but device list and metadata changes still require an explicit REST request.
 
 - **Controls**: Prefer SSE for realtime updates. If polling is required, use `/v1/devices/{deviceId}/controls` to get all control states in one call
 - **Device list**: Call `get_devices()` (`GET /v1/devices`) again to discover added or removed appliances and appliance nickname changes. These changes are not included in SSE events
@@ -307,9 +307,7 @@ async def main():
             await poll_controls(client, devices[0].device_id, interval=60)
 ```
 
-### Realtime Updates (SSE) _(beta)_
-
-⚠️ **Beta**: SSE support in this library is beta. The endpoint and its control-list payload are documented in the official HomeAPI documentation and OpenAPI specification.
+### Realtime Updates (SSE)
 
 The client subscribes to `/v1/sse/devices/{deviceId}/controls` and yields a list of parsed controls on each update. The server keeps the connection open and sends an empty keep-alive about every 30 seconds. SSE events only contain appliance control updates; they do not report added or removed appliances or appliance nickname changes. Call `get_devices()` (`GET /v1/devices`) explicitly to refresh that information. Malformed events are logged and skipped.
 
